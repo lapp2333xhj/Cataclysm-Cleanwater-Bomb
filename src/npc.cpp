@@ -18,6 +18,7 @@
 #include "basecamp.h"
 #include "bodypart.h"
 #include "catacharset.h"
+#include "cata_assert.h"
 #include "character.h"
 #include "character_attire.h"
 #include "character_id.h"
@@ -125,13 +126,20 @@ static const item_group_id Item_spawn_data_survivor_stabbing( "survivor_stabbing
 
 static const itype_id itype_molotov( "molotov" );
 
+static const json_character_flag json_flag_CANNIBAL("CANNIBAL");
+static const json_character_flag json_flag_PSYCHOPATH("PSYCHOPATH");
 static const json_character_flag json_flag_CANNOT_MOVE( "CANNOT_MOVE" );
 static const json_character_flag json_flag_READ_IN_DARKNESS( "READ_IN_DARKNESS" );
 static const json_character_flag json_flag_SAPIOVORE( "SAPIOVORE" );
+static const json_character_flag json_flag_SPIRITUAL("SPIRITUAL");
 
 static const mfaction_str_id monfaction_bee( "bee" );
 static const mfaction_str_id monfaction_human( "human" );
 static const mfaction_str_id monfaction_player( "player" );
+
+static const morale_type morale_killed_innocent("morale_killed_innocent");
+static const morale_type morale_killer_has_killed("morale_killer_has_killed");
+
 
 static const npc_class_id NC_ARSONIST( "NC_ARSONIST" );
 static const npc_class_id NC_BOUNTY_HUNTER( "NC_BOUNTY_HUNTER" );
@@ -168,6 +176,7 @@ static const trait_id trait_DEBUG_MIND_CONTROL( "DEBUG_MIND_CONTROL" );
 static const trait_id trait_HALLUCINATION( "HALLUCINATION" );
 static const trait_id trait_INTERCOM_OPERATOR( "INTERCOM_OPERATOR" );
 static const trait_id trait_NO_BASH( "NO_BASH" );
+static const trait_id trait_PACIFIST("PACIFIST");
 static const trait_id trait_PROF_DICEMASTER( "PROF_DICEMASTER" );
 static const trait_id trait_TERRIFYING( "TERRIFYING" );
 static const trait_id trait_TRADE_BACKEND( "TRADE_BACKEND" );
@@ -1694,7 +1703,7 @@ void npc::invalidate_range_cache()
         confident_range_cache = confident_shoot_range( *weapon,
                                 most_accurate_aiming_method_limit( *weapon ) );
     } else {
-        confident_range_cache = weapon->reach_range( *this ).first;
+        confident_range_cache = weapon->reach_range( *this );
     }
 }
 
@@ -3268,7 +3277,40 @@ void npc::die( map *here, Creature *nkiller )
     }
     Character &player_character = get_player_character();
     if( killer == &player_character ) {
-        player_character.apply_murder_penalties( this );
+        if (player_character.has_trait(trait_PACIFIST)) {
+            add_msg(_("A cold shock of guilt washes over you."));
+            player_character.add_morale(morale_killer_has_killed, -15, 0, 1_days, 1_hours);
+        }
+        if (hit_by_player) {
+            int morale_effect = -90;
+            // Just because you like eating people doesn't mean you love killing innocents
+            if (player_character.has_flag(json_flag_CANNIBAL) && morale_effect < 0) {
+                morale_effect = std::min(0, morale_effect + 50);
+            } // Pacifists double dip on penalties if they kill an innocent
+            if (player_character.has_trait(trait_PACIFIST)) {
+                morale_effect -= 15;
+            }
+            if (player_character.has_flag(json_flag_PSYCHOPATH) ||
+                player_character.has_flag(json_flag_SAPIOVORE)) {
+                morale_effect = 0;
+            } // only god can juge me
+            if (player_character.has_flag(json_flag_SPIRITUAL) &&
+                !player_character.has_flag(json_flag_PSYCHOPATH) &&
+                !player_character.has_flag(json_flag_SAPIOVORE)) {
+                add_msg(_("You feel ashamed of your actions."));
+                morale_effect -= 10;
+            }
+            cata_assert(morale_effect <= 0);
+            if (morale_effect == 0) {
+                // No morale effect
+            }
+            else if (morale_effect <= -50) {
+                player_character.add_morale(morale_killed_innocent, morale_effect, 0, 2_days, 3_hours);
+            }
+            else if (morale_effect > -50 && morale_effect < 0) {
+                player_character.add_morale(morale_killed_innocent, morale_effect, 0, 1_days, 1_hours);
+            }
+        }
     }
 
     if( spawn_corpse ) {

@@ -3013,74 +3013,48 @@ healing_options npc::patient_assessment( const Character &c )
     return try_to_fix;
 }
 
-npc_action npc::address_needs( float danger )
+npc_action npc::address_needs(float danger)
 {
-    // Activities assigned here are self-initiated (the NPC addressing its own
-    // needs), not player-assigned tasks. assign_activity() unconditionally sets
-    // NPCATT_ACTIVITY, which causes "completed the assigned task" spam and
-    // disrupts the BT. Save and restore around any activity we pick up.
-    const npc_attitude saved_attitude = attitude;
-    const npc_mission saved_mission = mission;
-    const auto self_activity = [&]() -> npc_action {
-        attitude = saved_attitude;
-        mission = saved_mission;
-        return npc_player_activity;
-    };
+    map& here = get_map();
 
-    // Check if NPC needs warmth via the oracle predicate directly.
-    // The full BT subtree is too narrow for gating -- it only knows about
-    // inventory items and indoor tiles, not ground items. The predicate
-    // just checks bodypart temperature.
-    bool needs_warmth = false;
-    {
-        behavior::character_oracle_t oracle( this );
-        needs_warmth = oracle.needs_warmth_badly( "" ) == behavior::status_t::running;
-        if( needs_warmth ) {
-            add_msg_debug( debugmode::DF_NPC_NEEDS,
-                           "NPC %s: needs warmth (trying wear, ground wear, shelter)",
-                           get_name() );
-        }
-    }
-
-    map &here = get_map();
-
-    Character &player_character = get_player_character();
+    Character& player_character = get_player_character();
     // rng because NPCs are not meant to be hypervigilant hawks that notice everything
     // and swing into action with alarming alacrity.
     // no sometimes they are just looking the other way, sometimes they hestitate.
     // ( also we can get huge performance boosts )
-    if( one_in( 3 ) ) {
-        healing_options try_to_fix_me = patient_assessment( *this );
-        if( try_to_fix_me.any_true() ) {
-            if( !use_bionic_by_id( bio_nanobots ) ) {
-                ai_cache.can_heal = has_healing_options( try_to_fix_me );
-                if( ai_cache.can_heal.any_true() ) {
+    if (one_in(3)) {
+        healing_options try_to_fix_me = patient_assessment(*this);
+        if (try_to_fix_me.any_true()) {
+            if (!use_bionic_by_id(bio_nanobots)) {
+                ai_cache.can_heal = has_healing_options(try_to_fix_me);
+                if (ai_cache.can_heal.any_true()) {
                     return npc_heal;
                 }
             }
-        } else {
-            deactivate_bionic_by_id( bio_nanobots );
         }
-        if( static_cast<int>( get_skill_level( skill_firstaid ) ) > 0 ) {
-            if( is_player_ally() ) {
-                healing_options try_to_fix_other = patient_assessment( player_character );
-                if( try_to_fix_other.any_true() ) {
-                    ai_cache.can_heal = has_healing_options( try_to_fix_other );
-                    if( ai_cache.can_heal.any_true() ) {
-                        ai_cache.ally = g->shared_from( player_character );
+        else {
+            deactivate_bionic_by_id(bio_nanobots);
+        }
+        if (static_cast<int>(get_skill_level(skill_firstaid)) > 0) {
+            if (is_player_ally()) {
+                healing_options try_to_fix_other = patient_assessment(player_character);
+                if (try_to_fix_other.any_true()) {
+                    ai_cache.can_heal = has_healing_options(try_to_fix_other);
+                    if (ai_cache.can_heal.any_true()) {
+                        ai_cache.ally = g->shared_from(player_character);
                         return npc_heal_player;
                     }
                 }
             }
-            for( const npc &guy : g->all_npcs() ) {
-                if( &guy == this || !guy.is_ally( *this ) || guy.posz() != posz() || !sees( here, guy ) ) {
+            for (const npc& guy : g->all_npcs()) {
+                if (&guy == this || !guy.is_ally(*this) || guy.posz() != posz() || !sees(here, guy)) {
                     continue;
                 }
-                healing_options try_to_fix_other = patient_assessment( guy );
-                if( try_to_fix_other.any_true() ) {
-                    ai_cache.can_heal = has_healing_options( try_to_fix_other );
-                    if( ai_cache.can_heal.any_true() ) {
-                        ai_cache.ally = g->shared_from( guy );
+                healing_options try_to_fix_other = patient_assessment(guy);
+                if (try_to_fix_other.any_true()) {
+                    ai_cache.can_heal = has_healing_options(try_to_fix_other);
+                    if (ai_cache.can_heal.any_true()) {
+                        ai_cache.ally = g->shared_from(guy);
                         return npc_heal_player;
                     }
                 }
@@ -3088,218 +3062,103 @@ npc_action npc::address_needs( float danger )
         }
     }
 
-    if( one_in( 3 ) ) {
-        if( get_perceived_pain() >= 15 ) {
-            if( !activate_bionic_by_id( bio_painkiller ) && has_painkiller() && !took_painkiller() ) {
+    if (one_in(3)) {
+        if (get_perceived_pain() >= 15) {
+            if (!activate_bionic_by_id(bio_painkiller) && has_painkiller() && !took_painkiller()) {
                 return npc_use_painkiller;
             }
-        } else {
-            deactivate_bionic_by_id( bio_painkiller );
+        }
+        else {
+            deactivate_bionic_by_id(bio_painkiller);
         }
     }
 
-    if( one_in( 3 ) && can_reload_current() ) {
+    if (one_in(3) && can_reload_current()) {
         return npc_reload;
     }
 
-    if( one_in( 3 ) ) {
-        add_msg_debug( debugmode::DF_NPC_ITEMAI, "%s decided to look into reloading items.", name );
+    if (one_in(3)) {
+        add_msg_debug(debugmode::DF_NPC_ITEMAI, "%s decided to look into reloading items.", name);
         item_location reloadable = find_reloadable();
-        if( reloadable ) {
-            do_reload( reloadable );
+        if (reloadable) {
+            do_reload(reloadable);
             return npc_noop;
-        }
-    }
-
-    // TODO: remove warmth from address_needs once hold_position and idle
-    // route through the executor path.  Currently kept as a safety net for
-    // NPCs that reach address_needs through hold_position / idle dispatch.
-    // Warmth: wearing clothes costs a turn but hypothermia is life-threatening.
-    // Before danger gate, like extreme food.
-    if( needs_warmth && wear_warmest_item() ) {
-        return npc_noop;
-    }
-    // Warmth: adjacent ground clothing, instant (no movement).
-    if( needs_warmth ) {
-        for( scored_item &c : find_nearby_warm_clothing() ) {
-            if( square_dist( pos_bub(), c.loc.pos_bub( here ) ) <= 1 ) {
-                if( wear_item_at( c.loc ) ) {
-                    return npc_noop;
-                }
-            }
         }
     }
 
     // Extreme thirst or hunger, bypass safety check.
-    if( needs_food() && ( get_thirst() > 80 ||
-                          get_stored_kcal() + stomach.get_calories() < get_healthy_kcal() * 0.75 ) ) {
-        if( consume_food_from_camp() ) {
+    if (get_thirst() > 80 ||
+        get_stored_kcal() + stomach.get_calories() < get_healthy_kcal() * 0.75) {
+        if (consume_food_from_camp()) {
             return npc_noop;
         }
-        if( consume_food() ) {
+        if (consume_food()) {
             return npc_noop;
-        }
-        // Adjacent ground food, instant.
-        for( scored_item &c : find_nearby_food() ) {
-            if( square_dist( pos_bub(), c.loc.pos_bub( here ) ) <= 1 ) {
-                if( consume_food_at( c.loc ) ) {
-                    return npc_noop;
-                }
-            }
-        }
-        // Adjacent water terrain, instant.
-        for( scored_water_source &ws : find_nearby_water_sources() ) {
-            if( square_dist( pos_bub(), ws.pos ) <= 1 ) {
-                if( drink_from_water_source( ws.pos ) ) {
-                    return npc_noop;
-                }
-            }
         }
     }
     //Hallucinations have a chance of disappearing each turn
-    if( is_hallucination() && one_in( 25 ) ) {
-        die( &here, nullptr );
+    if (is_hallucination() && one_in(25)) {
+        die(&here, nullptr);
     }
 
-    if( danger > NPC_DANGER_VERY_LOW ) {
+    if (danger > NPC_DANGER_VERY_LOW) {
         return npc_undecided;
     }
 
-    // Warmth: shelter requires movement, only safe at low danger.
-    if( needs_warmth && take_shelter_nearby() ) {
-        return npc_noop;
-    }
-    // Warmth: path to distant ground clothing.
-    if( needs_warmth ) {
-        for( scored_item &c : find_nearby_warm_clothing() ) {
-            if( move_to_and_verify( c.loc.pos_bub( here ) ) ) {
-                return npc_noop;
-            }
-        }
-    }
-
-    // Extreme food/water pathing: the pre-gate block only consumed adjacent
-    // resources. If extreme need persists and we passed the danger gate,
-    // path to distant ground food or water deterministically.
-    if( needs_food() && ( get_thirst() > 80 ||
-                          get_stored_kcal() + stomach.get_calories() < get_healthy_kcal() * 0.75 ) ) {
-        for( scored_item &c : find_nearby_food() ) {
-            if( square_dist( pos_bub(), c.loc.pos_bub( here ) ) <= 1 ) {
-                if( consume_food_at( c.loc ) ) {
-                    return npc_noop;
-                }
-            } else {
-                if( move_to_and_verify( c.loc.pos_bub( here ) ) ) {
-                    return npc_noop;
-                }
-            }
-        }
-        for( scored_water_source &ws : find_nearby_water_sources() ) {
-            if( square_dist( pos_bub(), ws.pos ) <= 1 ) {
-                if( drink_from_water_source( ws.pos ) ) {
-                    return npc_noop;
-                }
-            } else {
-                if( move_to_and_verify( ws.pos ) ) {
-                    return npc_noop;
-                }
-            }
-        }
-        // Last resort: harvest scavenging (forage underbrush, harvest plants).
-        for( const scored_water_source &h : find_nearby_harvestable( true ) ) {
-            if( square_dist( pos_bub(), h.pos ) <= 1 ) {
-                here.examine( *this, h.pos );
-                return activity ? self_activity() : npc_noop;
-            } else if( move_to_and_verify( h.pos ) ) {
-                return npc_noop;
-            }
-        }
-    }
-
-    // Normal food/drink: camp -> inventory -> ground food -> terrain water.
-    // All under the same random gate so ground never outranks camp/inventory.
-    if( needs_food() && one_in( 3 ) && ( get_thirst() > NPC_THIRST_CONSUME ||
-                                         get_hunger() > NPC_HUNGER_CONSUME ) ) {
-        if( consume_food_from_camp() ) {
+    if (one_in(3) && (get_thirst() > NPC_THIRST_CONSUME ||
+        get_hunger() > NPC_HUNGER_CONSUME)) {
+        if (consume_food_from_camp()) {
             return npc_noop;
         }
-        if( consume_food() ) {
+        if (consume_food()) {
             return npc_noop;
-        }
-        for( scored_item &c : find_nearby_food() ) {
-            if( square_dist( pos_bub(), c.loc.pos_bub( here ) ) <= 1 ) {
-                if( consume_food_at( c.loc ) ) {
-                    return npc_noop;
-                }
-            } else {
-                if( move_to_and_verify( c.loc.pos_bub( here ) ) ) {
-                    return npc_noop;
-                }
-            }
-        }
-        for( scored_water_source &ws : find_nearby_water_sources() ) {
-            if( square_dist( pos_bub(), ws.pos ) <= 1 ) {
-                if( drink_from_water_source( ws.pos ) ) {
-                    return npc_noop;
-                }
-            } else {
-                if( move_to_and_verify( ws.pos ) ) {
-                    return npc_noop;
-                }
-            }
-        }
-        // Last resort: harvest scavenging (same as extreme path).
-        for( const scored_water_source &h : find_nearby_harvestable( true ) ) {
-            if( square_dist( pos_bub(), h.pos ) <= 1 ) {
-                here.examine( *this, h.pos );
-                return activity ? self_activity() : npc_noop;
-            } else if( move_to_and_verify( h.pos ) ) {
-                return npc_noop;
-            }
         }
     }
 
-    if( one_in( 3 ) && wants_to_recharge_cbm() && recharge_cbm() ) {
+    if (one_in(3) && wants_to_recharge_cbm() && recharge_cbm()) {
         return npc_noop;
     }
 
-    if( can_do_pulp() ) {
-        if( !activity ) {
-            assign_activity( pulp_activity_actor( *pulp_location ) );
+    if (can_do_pulp()) {
+        if (!activity) {
+            assign_activity(pulp_activity_actor(*pulp_location));
         }
-        return self_activity();
-    } else if( find_corpse_to_pulp() ) {
+        return npc_player_activity;
+    }
+    else if (find_corpse_to_pulp()) {
         move_to_next();
         return npc_noop;
     }
 
-    if( one_in( 3 ) && adjust_worn() ) {
+    if (one_in(3) && adjust_worn()) {
         return npc_noop;
     }
 
     const auto could_sleep = [&]() {
-        if( danger <= 0.01 ) {
-            if( get_sleepiness() >= sleepiness_levels::TIRED ) {
+        if (danger <= 0.01) {
+            if (get_sleepiness() >= sleepiness_levels::TIRED) {
                 return true;
             }
-            if( is_walking_with() && player_character.in_sleep_state() &&
-                get_sleepiness() > ( sleepiness_levels::TIRED / 2 ) ) {
+            if (is_walking_with() && player_character.in_sleep_state() &&
+                get_sleepiness() > (sleepiness_levels::TIRED / 2)) {
                 return true;
             }
         }
         return false;
     };
     // TODO: More risky attempts at sleep when exhausted
-    if( could_sleep() ) {
-        if( !is_player_ally() ) {
-            return npc_sleep;
+    if (could_sleep()) {
+        if (!is_player_ally()) {
+            // TODO: Make tired NPCs handle sleep offscreen
+            set_sleepiness(0);
+            return npc_undecided;
         }
 
-        if( rules.has_flag( ally_rule::allow_sleep ) ||
-            get_sleepiness() > sleepiness_levels::MASSIVE_SLEEPINESS ) {
+        if (rules.has_flag(ally_rule::allow_sleep) ||
+            get_sleepiness() > sleepiness_levels::MASSIVE_SLEEPINESS) {
             return npc_sleep;
         }
-        if( player_character.in_sleep_state() ) {
+        if (player_character.in_sleep_state()) {
             // TODO: "Guard me while I sleep" command
             return npc_sleep;
         }
