@@ -3168,9 +3168,6 @@ void tab_items_view::draw_body( debug_console &host )
     };
 
     auto passes_filter = [this]( const item_row & r ) {
-        if( item_filter.empty() ) {
-            return true;
-        }
         return r.plain.find( item_filter ) != std::string::npos ||
                r.type_id.find( item_filter ) != std::string::npos ||
                r.category.find( item_filter ) != std::string::npos;

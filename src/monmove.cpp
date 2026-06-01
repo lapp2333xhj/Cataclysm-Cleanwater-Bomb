@@ -1207,14 +1207,7 @@ void monster::move()
         // in both circular and roguelike distance modes.
         const float distance_to_target = trig_dist( pos_bub(), destination );
         tripoint_bub_ms loc = pos_bub();
-        std::vector<tripoint_bub_ms> options = squares_closer_to( loc, destination );
-        if( destination.z() < loc.z() )  {
-            // HACK: Consider moving straight downward (because we might be flying!)
-            tripoint_bub_ms directly_below( loc.x(), loc.y(), loc.z() - 1 );
-            // EXTRA SUPER DUPER HACK: Put it at the front so it's checked first.
-            options.insert( options.begin(), directly_below );
-        }
-        for( tripoint_bub_ms &candidate : options ) {
+        for (tripoint_bub_ms& candidate : squares_closer_to(loc, destination)) {
             // rare scenario when monster is on the border of the map and it's goal is outside of the map
             if( !here.inbounds( candidate ) ) {
                 continue;
@@ -1233,8 +1226,7 @@ void monster::move()
             }
             const tripoint_abs_ms candidate_abs = here.get_abs( candidate );
 
-            const bool is_z_move = candidate.z() != pos_abs().z();
-            if( is_z_move ) {
+            if (candidate.z() != pos_abs().z()) {
                 bool can_z_move = true;
                 if( !here.valid_move( pos_bub(), candidate, false, true, via_ramp ) ) {
                     // Can't phase through floor
@@ -1286,8 +1278,7 @@ void monster::move()
                     continue;
                 }
                 const Attitude att = attitude_to( *target );
-                if( att == Attitude::HOSTILE &&
-                    ( !is_z_move || here.on_matching_stairs( pos_bub(), candidate ) ) ) {
+                if (att == Attitude::HOSTILE) {
                     // When attacking an adjacent enemy, we're direct.
                     moved = true;
                     next_step = candidate_abs;
@@ -1978,8 +1969,7 @@ bool monster::attack_at( const tripoint_bub_ms &p )
     Character &player_character = get_player_character();
     const bool sees_player = sees( here, player_character );
     // Targeting player location
-    if( p == player_character.pos_bub() &&
-        ( p.z() == pos_bub().z() || here.on_matching_stairs( pos_bub(), p ) ) ) {
+    if (p == player_character.pos_bub()) {
         if( sees_player ) {
             return melee_attack( player_character );
         } else {
