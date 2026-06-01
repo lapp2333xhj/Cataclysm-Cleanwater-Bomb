@@ -2848,6 +2848,7 @@
     "skill_used": "fabrication",
     "difficulty": 4,
     "time": "8 h",
+    "autolearn": [ [ "fabrication", 6 ] ],
     "book_learn": [ [ "textbook_fabrication", 4 ], [ "manual_fabrication", 4 ], [ "metal_casting_book", 3 ] ],
     "//": "Traditional casting method for making a small anvil. Requires significant metal and careful mold preparation.",
     "qualities": [ { "id": "HAMMER", "level": 2 }, { "id": "CHISEL", "level": 2 } ],
@@ -2861,7 +2862,7 @@
       { "proficiency": "prof_redsmithing", "required": true },
       { "proficiency": "prof_redsmithing_adv" }
     ],
-    "components": [ [ [ "steel_lump_any", 3, "LIST" ], [ "steel_chunk_any", 12, "LIST" ], [ "scrap", 36 ] ] ]
+    "components": [ [ [ "steel_lump_any", 17, "LIST" ], [ "steel_chunk_any", 68, "LIST" ], [ "scrap", 340 ] ] ]
   },
   {
     "type": "recipe",
@@ -2873,6 +2874,7 @@
     "skill_used": "fabrication",
     "difficulty": 5,
     "time": "12 h",
+    "autolearn": [ [ "fabrication", 7 ] ],
     "book_learn": [ [ "textbook_fabrication", 5 ], [ "manual_fabrication", 5 ] ],
     "//": "Traditional forging method - hammer welding multiple steel pieces together to form a solid anvil. Very labor intensive but doesn't require casting.",
     "using": [ [ "blacksmithing_standard", 12 ] ],
@@ -2882,7 +2884,7 @@
       { "proficiency": "prof_blacksmithing", "required": true },
       { "proficiency": "prof_toolsmithing" }
     ],
-    "components": [ [ [ "steel_lump_any", 3, "LIST" ], [ "steel_chunk_any", 12, "LIST" ] ] ]
+    "components": [ [ [ "steel_lump_any", 19, "LIST" ], [ "steel_chunk_any", 76, "LIST" ] ] ]
   },
   {
     "type": "recipe",
