@@ -520,7 +520,7 @@ target_handler::trajectory target_handler::mode_reach( avatar &you, item_locatio
     ui.you = &you;
     ui.mode = target_ui::TargetMode::Reach;
     ui.relevant = weapon.get_item();
-    ui.range = weapon ? weapon->current_reach_range( you ).first : 1;
+    ui.range = weapon ? weapon->current_reach_range( you ) : 1;
 
     restore_on_out_of_scope view_offset_prev( you.view_offset );
     return ui.run();
@@ -1142,12 +1142,6 @@ int Character::fire_gun( map &here, const tripoint_bub_ms &target, int shots, it
         return 0;
     }
 
-    short times_shot_target = 0;
-    Creature *maybe_target = get_creature_tracker().creature_at( here.get_abs( target ) );
-    if( maybe_target && maybe_target->as_monster() ) {
-        times_shot_target = maybe_target->as_monster()->times_combatted_player;
-    }
-
     // usage of any attached bipod is dependent upon terrain or on being prone
     bool bipod = here.has_flag_ter_or_furn( ter_furn_flag::TFLAG_MOUNTABLE, pos_bub( here ) ) ||
                  is_prone();
@@ -1231,8 +1225,6 @@ int Character::fire_gun( map &here, const tripoint_bub_ms &target, int shots, it
                 continue;
             }
             if( monster *const m = hit_entry.first->as_monster() ) {
-                times_shot_target = std::max( times_shot_target, m->times_combatted_player );
-                m->times_combatted_player++;
                 cata::event e = cata::event::make<event_type::character_ranged_attacks_monster>( getID(), gun_id,
                                 projectile_use_ammo_id,
                                 false,
@@ -1347,15 +1339,13 @@ int Character::fire_gun( map &here, const tripoint_bub_ms &target, int shots, it
     }
 
     // Preventing using a trapped creature as an infinite training dummy.
-    if( times_shot_target < 100 && curshot > 0 ) {
-        // Practice the base gun skill proportionally to number of hits, but always by one.
-        if( firing != nullptr && !gun.has_flag( flag_WONT_TRAIN_MARKSMANSHIP ) ) {
-            practice( skill_gun, ( hits + 1 ) * 5 );
-        }
-        // launchers train weapon skill for both hits and misses.
-        int practice_units = gun_skill == skill_launcher ? curshot : hits;
-        practice( gun_skill, ( practice_units + 1 ) * 5 );
+    // Practice the base gun skill proportionally to number of hits, but always by one.
+    if (!gun.has_flag(flag_WONT_TRAIN_MARKSMANSHIP)) {
+        practice(skill_gun, (hits + 1) * 5);
     }
+    // launchers train weapon skill for both hits and misses.
+    int practice_units = gun_skill == skill_launcher ? curshot : hits;
+    practice(gun_skill, (practice_units + 1) * 5);
 
     if( !gun.is_gun() ) {
         // If we lose our gun as a side effect of firing it, skip the rest of the function.
@@ -3282,10 +3272,6 @@ bool target_ui::set_cursor_pos( const tripoint_bub_ms &new_pos )
         valid_pos.z() = clamp( valid_pos.z(), -OVERMAP_DEPTH, OVERMAP_HEIGHT );
         // Or current view range
         valid_pos.z() = clamp( valid_pos.z() - src.z(), -fov_3d_z_range, fov_3d_z_range ) + src.z();
-        // Or across z-levels (in melee)
-        if( mode == TargetMode::Reach && src.z() != new_pos.z() ) {
-            return false;
-        }
 
         new_traj = here.find_clear_path( src, valid_pos );
         if( range == 1 ) {
@@ -3548,8 +3534,6 @@ void target_ui::update_status()
         // gun mode to short-ranged. We can, of course, move the cursor into range automatically,
         // but that would be rude. Instead, wait for directional keys/etc. and *then* move the cursor.
         status = Status::OutOfRange;
-    } else if( mode == TargetMode::Reach && src.z() != dst.z() ) {
-        status = Status::OutOfRange;
     } else {
         status = Status::Good;
     }
@@ -3791,7 +3775,7 @@ void target_ui::update_ammo_range_from_gun_mode()
         }
     } else {
         if( relevant->gun_current_mode().melee() ) {
-            range = relevant->current_reach_range( *you ).first;
+            range = relevant->current_reach_range( *you );
         } else {
             ammo = activity->reload_loc ? activity->reload_loc.get_item()->type :
                    relevant->gun_current_mode().target->ammo_data();
@@ -3892,7 +3876,7 @@ bool target_ui::action_switch_mode()
     } else {
         if( relevant->gun_current_mode().melee() ) {
             refresh = true;
-            range = relevant->current_reach_range( *you ).first;
+            range = relevant->current_reach_range( *you );
         } else {
             ammo = activity->reload_loc ? activity->reload_loc.get_item()->type :
                    relevant->gun_current_mode().target->ammo_data();

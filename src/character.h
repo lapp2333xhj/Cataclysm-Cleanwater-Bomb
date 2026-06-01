@@ -1163,7 +1163,6 @@ class Character : public Creature, public visitable
                                     bool allow_unarmed = true, int forced_movecost = -1 );
 
         /** Handles reach melee attacks */
-        bool can_reach_attack( const Creature &target ) const;
         void reach_attack( const tripoint_bub_ms &p, int forced_movecost = -1 );
 
         /**
@@ -1605,8 +1604,6 @@ class Character : public Creature, public visitable
         void calc_encumbrance();
         /** Calculate any discomfort your current clothes are causing. */
         void calc_discomfort();
-        /** Apply morale penalties for murder */
-        void apply_murder_penalties( Creature *victim );
         /** Recalculate encumbrance for all body parts as if `new_item` was also worn. */
         void calc_encumbrance( const item &new_item );
         // recalculates bodyparts based on enchantments modifying them and the default anatomy.
