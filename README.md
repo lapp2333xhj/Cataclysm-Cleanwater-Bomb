@@ -1,5 +1,5 @@
 # 大灾变：净化协议（Cataclysm: Cleanwater Bomb）
-大灾变：净化协议（Cataclysm: Cleanwater Bomb）是一款回合制生存游戏，背景设定在末日后的世界。你将在严酷、持续且程序生成的世界中挣扎求生，搜寻消亡文明的残骸，寻找食物、装备。同时在未来，我们期望能加入一些很酷的玩法，比如实现工业化、重新建设家园。（大饼招收位）
+大灾变：净化协议（Cataclysm: Cleanwater Bomb）是一款回合制生存游戏，背景设定在末日后的世界。你将在严酷的世界中挣扎求生，搜寻消亡文明的残骸，寻找食物、装备。同时在未来，我们期望能加入一些很酷的玩法，比如实现工业化、重新建设家园。（大饼招收位）
 基于 [CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA) `cdda/master` 分支 commit：**221c786e7d**
 
 ## 下载
