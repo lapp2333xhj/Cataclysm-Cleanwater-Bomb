@@ -1,36 +1,4 @@
-# Cataclysm: Cleanwater Bomb
-Cataclysm: Cleanwater Bomb is a turn-based survival game set in a post-apocalyptic world. You will struggle to survive in a harsh wasteland, scavenge the ruins of a fallen civilization, and gather food and equipment. In the future, we plan to add exciting new features such as industrialization and home reconstruction. *(We're recruiting contributors to help turn these plans into reality!)*
 
-Based on the `cdda/master` branch of [CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA), commit: **221c786e7d**
-
-## Downloads
-**Releases** You can download the current test version here: [Releases](https://github.com/LYHGLYTX/Cataclysm-Cleanwater-Bomb/releases)
-
-## How to Contribute
-Any developer interested in contributing to this branch is welcome to submit pull requests to support its development.
-For now, you can refer to [CONTRIBUTING.md](./CONTRIBUTING.md). Please note that we have not yet modified this document, so it may not fully align with our project's guidelines.
-
-We also welcome feedback and improvement suggestions from all players, particularly on the following areas:
-- Any illogical or counterintuitive mechanics, preferably with verifiable real-world references
-- Any reasonable analysis and actionable improvement proposals
-
-## Community
-Join our QQ group: 552610319
-
-## FAQ
-#### Q: Are you creating this project to simplify the game or boost its playability?
-A: No. Adjusting difficulty is not our core objective, and we will not make changes solely for that purpose. The mission of this project is to avoid unnecessary frustrations for players while preserving the full depth of the original gameplay. We aim to build a modification system that is realistic, intuitive, engaging, and fair to both player characters and monsters. We reject the false dichotomy that realism must conflict with gameplay or character performance, and strive to think from the player's perspective as developers.
-
-#### Q: Will you delete large amounts of original game content against players' wishes in the future?
-A: No. We will avoid blanket bans and never remove content without providing a suitable replacement. Developers and contributors are accountable for any subtractions they make, and we will reject extreme changes made solely for the sake of nerfing or buffing. We support changes grounded in extensive references and real-world logic; all mechanic modifications must be explainable and consistent with real-world physics, physiology, and engineering principles. We will never force through changes that contradict logical reality.
-
-We are committed to a collaborative developer-player relationship, reject the "No fun allowed" development philosophy, and eliminate meaningless failures caused by opaque or unexpected rules. We recognize that realism does not equal nerfing or a lack of gameplay, and will always balance realism with fun.
-
-## License
-This project inherits the license from the original game:
-- CC-BY-SA 3.0 and compatible terms
-
-\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 # 大灾变：净化协议（Cataclysm: Cleanwater Bomb）
 大灾变：净化协议（Cataclysm: Cleanwater Bomb）是一款回合制生存游戏，背景设定在末日后的世界。你将在严酷的世界中挣扎求生，搜寻消亡文明的残骸，寻找食物、装备。同时在未来，我们期望能加入一些很酷的玩法，比如实现工业化、重新建设家园。（大饼招收位）
 基于 [CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA) `cdda/master` 分支 commit：**221c786e7d**
@@ -68,3 +36,37 @@ This project inherits the license from the original game:
 本项目继承原作许可协议：
 
 - CC-BY-SA 3.0 及兼容条款
+
+----
+
+# Cataclysm: Cleanwater Bomb
+Cataclysm: Cleanwater Bomb is a turn-based survival game set in a post-apocalyptic world. You will struggle to survive in a harsh wasteland, scavenge the ruins of a fallen civilization, and gather food and equipment. In the future, we plan to add exciting new features such as industrialization and home reconstruction. *(We're recruiting contributors to help turn these plans into reality!)*
+
+Based on the `cdda/master` branch of [CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA), commit: **221c786e7d**
+
+## Downloads
+**Releases** You can download the current test version here: [Releases](https://github.com/LYHGLYTX/Cataclysm-Cleanwater-Bomb/releases)
+
+## How to Contribute
+Any developer interested in contributing to this branch is welcome to submit pull requests to support its development.
+For now, you can refer to [CONTRIBUTING.md](./CONTRIBUTING.md). Please note that we have not yet modified this document, so it may not fully align with our project's guidelines.
+
+We also welcome feedback and improvement suggestions from all players, particularly on the following areas:
+- Any illogical or counterintuitive mechanics, preferably with verifiable real-world references
+- Any reasonable analysis and actionable improvement proposals
+
+## Community
+Join our QQ group: 552610319
+
+## FAQ
+#### Q: Are you creating this project to simplify the game or boost its playability?
+A: No. Adjusting difficulty is not our core objective, and we will not make changes solely for that purpose. The mission of this project is to avoid unnecessary frustrations for players while preserving the full depth of the original gameplay. We aim to build a modification system that is realistic, intuitive, engaging, and fair to both player characters and monsters. We reject the false dichotomy that realism must conflict with gameplay or character performance, and strive to think from the player's perspective as developers.
+
+#### Q: Will you delete large amounts of original game content against players' wishes in the future?
+A: No. We will avoid blanket bans and never remove content without providing a suitable replacement. Developers and contributors are accountable for any subtractions they make, and we will reject extreme changes made solely for the sake of nerfing or buffing. We support changes grounded in extensive references and real-world logic; all mechanic modifications must be explainable and consistent with real-world physics, physiology, and engineering principles. We will never force through changes that contradict logical reality.
+
+We are committed to a collaborative developer-player relationship, reject the "No fun allowed" development philosophy, and eliminate meaningless failures caused by opaque or unexpected rules. We recognize that realism does not equal nerfing or a lack of gameplay, and will always balance realism with fun.
+
+## License
+This project inherits the license from the original game:
+- CC-BY-SA 3.0 and compatible terms
