@@ -50,7 +50,7 @@ https://github.com/LYHGLYTX/Cataclysm-Cleanwater-Bomb/blob/master/data/changelog
 <!-- 在此添加关于这个特性或 bug 修复的其他背景信息（例如原型图、概念验证或截图）。 -->
 
 
-<!--README: Cataclysm: Dark Days Ahead 以 Creative Commons Attribution ShareAlike 3.0 许可证发布。
+<!--README: Cataclysm: Cleanwater Bomb (CCB) 以 Creative Commons Attribution ShareAlike 3.0 许可证发布。
 游戏的代码与内容可自由用于任何目的的使用、修改和再分发。
 通过为本项目做贡献，你即同意该许可证的条款，并同意你所做的任何贡献也将受同一许可证覆盖。
 详见 http://creativecommons.org/licenses/by-sa/3.0/ 。 -->

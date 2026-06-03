@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        请注意，CDDA 是一个开源项目，任何人都可以参与贡献。建议你看看能否自己实现这个想法。CDDA 有很大一部分是用 JSON 编写的，它本质上就是任何人都能编辑的纯文本代码。
+        请注意，CCB 是一个开源项目，任何人都可以参与贡献。建议你看看能否自己实现这个想法。CCB 有很大一部分是用 JSON 编写的，它本质上就是任何人都能编辑的纯文本代码。
 
   - type: markdown
     attributes:
