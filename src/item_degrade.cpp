@@ -1145,8 +1145,13 @@ float item::simulate_burn( fire_data &frd ) const
     }
     const int mat_total = type->mat_portion_total == 0 ? 1 : type->mat_portion_total;
 
-    // Liquids that don't burn well smother fire well instead
-    if( made_of( phase_id::LIQUID ) && time_added < 200 ) {
+    // Liquids that don't burn well smother fire well instead.
+    // Compare current_phase directly instead of made_of( phase_id::LIQUID ):
+    // simulate_burn is a hot path (per-item, per-turn during fires) and this
+    // avoids an out-of-line call plus its is_null() check. current_phase is only
+    // ever set from type->phase, so a null item can never be LIQUID and this
+    // stays equivalent to made_of( phase_id::LIQUID ).
+    if( current_phase == phase_id::LIQUID && time_added < 200 ) {
         time_added -= rng( 400.0 * to_liter( vol ), 1200.0 * to_liter( vol ) );
     } else if( mats.size() > 1 ) {
         // Average the materials
