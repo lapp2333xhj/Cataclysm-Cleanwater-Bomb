@@ -19,6 +19,7 @@ static constexpr uint64_t bit_fit = static_cast<uint64_t>( hot_flag_bit::FIT );
 static constexpr uint64_t bit_dirty = static_cast<uint64_t>( hot_flag_bit::DIRTY );
 static constexpr uint64_t bit_varsize = static_cast<uint64_t>( hot_flag_bit::VARSIZE );
 static constexpr uint64_t bit_diamond = static_cast<uint64_t>( hot_flag_bit::DIAMOND );
+static constexpr uint64_t bit_unbreakable = static_cast<uint64_t>( hot_flag_bit::UNBREAKABLE );
 
 TEST_CASE( "hot_flag_bits_set_unset_toggle_own_bits", "[item][flag]" )
 {
@@ -140,4 +141,25 @@ TEST_CASE( "hot_flag_bits_combined_view_agrees_with_public_has_flag", "[item][fl
     CHECK( it.has_flag( flag_DIAMOND ) == ( ( it.combined_hot_flags() & bit_diamond ) != 0 ) );
     CHECK( it.has_flag( flag_VARSIZE ) == ( ( it.combined_hot_flags() & bit_varsize ) != 0 ) );
     CHECK( it.has_flag( flag_DIRTY ) == ( ( it.combined_hot_flags() & bit_dirty ) != 0 ) );
+}
+
+// item::burn() short-circuits on flag_UNBREAKABLE via the hot-bit mask instead
+// of has_flag(); these guard that the fast path stays equivalent to has_flag().
+TEST_CASE( "hot_flag_bits_unbreakable_toggles_own_bit_and_matches_has_flag", "[item][flag]" )
+{
+    item it( itype_helmet_army );
+    REQUIRE( ( it.own_hot_flags() & bit_unbreakable ) == 0 );
+    REQUIRE( it.has_flag( flag_UNBREAKABLE ) ==
+             ( ( it.combined_hot_flags() & bit_unbreakable ) != 0 ) );
+
+    it.set_flag( flag_UNBREAKABLE );
+    CHECK( ( it.own_hot_flags() & bit_unbreakable ) == bit_unbreakable );
+    CHECK( it.has_flag( flag_UNBREAKABLE ) );
+    CHECK( it.has_flag( flag_UNBREAKABLE ) ==
+           ( ( it.combined_hot_flags() & bit_unbreakable ) != 0 ) );
+
+    it.unset_flag( flag_UNBREAKABLE );
+    CHECK( ( it.own_hot_flags() & bit_unbreakable ) == 0 );
+    CHECK( it.has_flag( flag_UNBREAKABLE ) ==
+           ( ( it.combined_hot_flags() & bit_unbreakable ) != 0 ) );
 }

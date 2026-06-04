@@ -1173,7 +1173,8 @@ float item::simulate_burn( fire_data &frd ) const
 
 bool item::burn( fire_data &frd )
 {
-    if( has_flag( flag_UNBREAKABLE ) ) {
+    constexpr uint64_t unbreakable_bit = static_cast<uint64_t>( hot_flag_bit::UNBREAKABLE );
+    if( combined_hot_flags() & unbreakable_bit ) {
         return false;
     }
     float burn_added = simulate_burn( frd );

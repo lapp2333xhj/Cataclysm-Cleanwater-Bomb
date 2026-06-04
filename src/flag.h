@@ -42,6 +42,7 @@ enum class hot_flag_bit : uint64_t {
     GIBBED             = 1ULL << 20,
     SKINNED            = 1ULL << 21,
     QUARTERED          = 1ULL << 22,
+    UNBREAKABLE        = 1ULL << 23,
 };
 
 // Returns the hot bit for f, or 0 if f is not in the hot set.

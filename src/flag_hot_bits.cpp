@@ -77,5 +77,8 @@ uint64_t hot_bit_for( const flag_id &f ) noexcept
     if( f == flag_QUARTERED ) {
         return static_cast<uint64_t>( hot_flag_bit::QUARTERED );
     }
+    if( f == flag_UNBREAKABLE ) {
+        return static_cast<uint64_t>( hot_flag_bit::UNBREAKABLE );
+    }
     return 0;
 }
