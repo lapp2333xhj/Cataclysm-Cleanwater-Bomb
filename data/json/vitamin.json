@@ -4,6 +4,7 @@
     "type": "vitamin",
     "vit_type": "vitamin",
     "name": { "str": "Calcium" },
+    "deficiency": "hypocalcemia",
     "min": -48000,
     "max": 0,
     "//": [
@@ -11,7 +12,8 @@
       "1000mg for 19-50yr olds from https://ods.od.nih.gov/factsheets/calcium-HealthProfessional/#h2"
     ],
     "weight_per_unit": "10 mg 420 μg",
-    "rate": "15 m"
+    "rate": "15 m",
+    "disease": [ [ -19200, -22400 ], [ -22401, -25600 ], [ -25601, -48000 ] ]
   },
   {
     "id": "iron",

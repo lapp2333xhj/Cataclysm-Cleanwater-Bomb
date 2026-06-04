@@ -4319,6 +4319,52 @@
   },
   {
     "type": "effect_type",
+    "id": "hypocalcemia",
+    "name": [ "Hypocalcemia", "Weak bones", "Brittle bones" ],
+    "desc": [ "A lack of calcium in your diet will make your bones progressively weaker." ],
+    "apply_message": "Your bones are becoming more brittle.",
+    "remove_message": "Your bones regain their usual strength.",
+    "decay_messages": [
+      [ "Your calcium deficiency is nearly resolved.", "good" ],
+      [ "Your bones become stronger as your calcium deficiency improves.", "good" ]
+    ],
+    "max_intensity": 3,
+    "rating": "bad",
+    "base_mods": {
+      "str_mod": [ -1 ],
+      "speed_mod": [ -5 ],
+      "h_mod_min": [ -1 ],
+      "h_mod_min_val": [ 0 ],
+      "h_mod_chance": [ 900 ]
+    },
+    "scaling_mods": {
+      "str_mod": [ -1 ],
+      "dex_mod": [ -0.5 ],
+      "speed_mod": [ -10 ],
+      "h_mod_min_val": [ -50 ],
+      "h_mod_chance": [ -200 ]
+    },
+    "enchantments": [
+      {
+        "condition": "ALWAYS",
+        "incoming_damage_mod": [
+          {
+            "type": "bash",
+            "multiply": { "math": [ "min( (u_effect_intensity('hypocalcemia') * 0.1 ), 0.3)" ] }
+          }
+        ],
+        "values": [
+          {
+            "value": "CARRY_WEIGHT",
+            "multiply": { "math": [ "max( (-0.08 * u_effect_intensity('hypocalcemia') ), -0.24)" ] }
+          }
+        ]
+      }
+    ],
+    "blood_analysis_description": "Hypocalcemia"
+  },
+  {
+    "type": "effect_type",
     "id": "anemia",
     "name": [ "Early Iron Deficiency", "Iron Deficiency", "Acute Iron Deficiency" ],
     "desc": [
