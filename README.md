@@ -2,7 +2,7 @@
 # 大灾变：净化协议（Cataclysm: Cleanwater Bomb）
 《大灾变：净化协议（Cataclysm: Cleanwater Bomb）》是一款启示录背景与科学奇幻设定的roguelike单人回合制末日生存游戏。
 
-在这款游戏里，你见面对由程序生成的充满复生的丧尸、严酷且持续的生存压力与来自异界的可怖侵蚀的复杂环境，你需要在崩坏的世界中挣扎求生，搜寻消亡文明的残骸，寻找食物、装备。同时在未来，我们期望能加入一些很酷的玩法，比如实现工业化、重新建设家园。
+在这款游戏里，你将面对由程序生成的充满复生的丧尸、严酷且持续的生存压力与来自异界的可怖侵蚀的复杂环境，你需要在崩坏的世界中挣扎求生，搜寻消亡文明的残骸，寻找食物、装备。同时在未来，我们期望能加入一些很酷的玩法，比如实现工业化、重新建设家园。
 
 基于 [CleverRaven/Cataclysm-DDA](https://github.com/CleverRaven/Cataclysm-DDA) `cdda/master` 分支 commit：**221c786e7d**
 
@@ -23,7 +23,7 @@
 ## 社区
 你可以通过以下方式加入我们或参与讨论：
  - QQ群: 552610319
- - Discord: https://discord.gg/eE22fDnF
+ - Discord: https://discord.gg/tUG9MFwCqf
  - Reddit: https://www.reddit.com/r/CataclysmCB/
 
 ## 问答
@@ -66,7 +66,7 @@ We also welcome feedback and improvement suggestions from all players, particula
 ## Community
 Join our:
  - QQ group: 552610319
- - Discord: https://discord.gg/eE22fDnF
+ - Discord: https://discord.gg/tUG9MFwCqf
  - Reddit: https://www.reddit.com/r/CataclysmCB/
 
 ## FAQ
