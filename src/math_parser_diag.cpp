@@ -1405,7 +1405,6 @@ double item_rot_eval(const_dialogue const &d, char scope, std::vector<diag_value
         }
         else
         {
-            // format already validated to be "raw" or "relative" above
             return obj.get_relative_rot();
         }
     }
