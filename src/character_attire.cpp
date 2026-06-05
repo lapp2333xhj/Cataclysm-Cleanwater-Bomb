@@ -108,6 +108,18 @@ units::mass get_selected_stack_weight( const item *i, const std::map<const item 
     return 0_gram;
 }
 
+static bool is_stackable_container_with_contents( const item &it )
+{
+    return it.count_by_charges() && it.charges > 1 &&
+           it.is_container() && !it.container_type_pockets_empty();
+}
+
+static bool is_wearable_empty_stackable_container_stack( const item_location &loc )
+{
+    return loc && loc->count_by_charges() && loc->charges > 1 &&
+           loc->is_container() && loc->container_type_pockets_empty();
+}
+
 ret_val<void> Character::can_wear( const item &it, bool with_equip_change ) const
 {
 
@@ -135,6 +147,9 @@ ret_val<void> Character::can_wear( const item &it, bool with_equip_change ) cons
     }
     if( !it.is_armor() ) {
     return ret_val<void>::make_failure( _( "Putting on a %s would be tricky." ), it.tname() );
+    }
+    if( is_stackable_container_with_contents( it ) ) {
+        return ret_val<void>::make_failure( _( "Can't wear a stackable container with contents." ) );
     }
 
     if( has_trait( trait_WOOLALLERGY ) && ( it.made_of( material_wool ) ||
@@ -285,14 +300,12 @@ Character::wear( int pos, bool interactive )
 std::optional<std::list<item>::iterator>
 Character::wear( item_location item_wear, bool interactive )
 {
-    item &to_wear = *item_wear;
-
     // Need to account for case where we're trying to wear something that belongs to someone else
-    if( !avatar_action::check_stealing( *this, to_wear ) ) {
+    if( !avatar_action::check_stealing( *this, *item_wear ) ) {
         return std::nullopt;
     }
 
-    if( is_worn( to_wear ) ) {
+    if( is_worn( *item_wear ) ) {
         if( interactive ) {
             add_msg_player_or_npc( m_info,
                                    _( "You are already wearing that." ),
@@ -301,7 +314,7 @@ Character::wear( item_location item_wear, bool interactive )
         }
         return std::nullopt;
     }
-    if( to_wear.is_null() ) {
+    if( item_wear->is_null() ) {
         if( interactive ) {
             add_msg_player_or_npc( m_info,
                                    _( "You don't have that item." ),
@@ -309,8 +322,16 @@ Character::wear( item_location item_wear, bool interactive )
         }
         return std::nullopt;
     }
+    if( is_wearable_empty_stackable_container_stack( item_wear ) ) {
+        item_location split = item_wear.split_stack( 1 );
+        if( !split ) {
+            return std::nullopt;
+        }
+        item_wear = split;
+    }
 
     bool was_weapon;
+    item &to_wear = *item_wear;
     item to_wear_copy( to_wear );
     if( &to_wear == &weapon ) {
         weapon = item();
@@ -2060,6 +2081,9 @@ void outfit::best_pocket( Character &guy, const item &it, const item *avoid,
         if( &worn_it == &it || &worn_it == avoid ) {
             continue;
         }
+        if( is_stackable_container_with_contents( worn_it ) ) {
+            continue;
+        }
         item_location loc( guy, &worn_it );
         std::pair<item_location, item_pocket *> internal_pocket =
             worn_it.best_pocket( it, loc, avoid, false, ignore_settings );
@@ -2358,6 +2382,9 @@ void outfit::pickup_stash( Character &guy, const item &newit, int &remaining_cha
         if( remaining_charges == 0 ) {
             break;
         }
+        if( is_stackable_container_with_contents( i ) ) {
+            continue;
+        }
         item_location loc( guy, &i );
         if( is_empty_stackable_container( loc ) ) {
             const int used_charges = fill_empty_stackable_containers( loc, newit, remaining_charges,
@@ -2477,6 +2504,9 @@ std::vector<pocket_data_with_parent> Character::get_all_pocket_with_parent(
     }
 
     for( item_location &loc : locs ) {
+        if( is_stackable_container_with_contents( *loc ) ) {
+            continue;
+        }
         for( const item_pocket *pocket : loc->get_container_pockets() ) {
             std::vector<pocket_data_with_parent> child =
                 get_child_pocket_with_parent( pocket, loc, 0, filter );
@@ -2538,6 +2568,9 @@ void outfit::add_stash( Character &guy, const item &newit, int &remaining_charge
         // Crawl First : wielded item
         item_location carried_item = guy.get_wielded_item();
         if( carried_item && !carried_item->has_pocket_type( pocket_type::MAGAZINE ) &&
+            is_stackable_container_with_contents( *carried_item ) ) {
+            // Stackable container stacks with contents should not collect contents while wielded.
+        } else if( carried_item && !carried_item->has_pocket_type( pocket_type::MAGAZINE ) &&
             is_empty_stackable_container( carried_item ) ) {
             int used_charges = fill_empty_stackable_containers( carried_item, newit, remaining_charges,
                                guy, /*unseal_pockets=*/false, /*allow_sealed=*/false, /*ignore_settings=*/false,

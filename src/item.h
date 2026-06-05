@@ -58,6 +58,8 @@ class enchantment;
 class gun_type_type;
 class gunmod_location;
 class item;
+bool stackable_container_contents_need_split( const item &it );
+bool split_stackable_container_contents_from_stack( item &it, item &empty_stack );
 class iteminfo_query;
 class map;
 class monster;

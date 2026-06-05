@@ -499,6 +499,10 @@ item item::split( int qty )
     if( !count_by_charges() || qty <= 0 || qty >= charges ) {
         return item();
     }
+    if( is_container() && !container_type_pockets_empty() ) {
+        debugmsg( "tried to split stackable container with contents: %s", tname() );
+        return item();
+    }
     item res = *this;
     res.charges = qty;
     charges -= qty;

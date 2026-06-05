@@ -42,6 +42,8 @@ class TextJsonIn;
 class TextJsonObject;
 class TextJsonValue;
 class item;
+bool stackable_container_contents_need_split( const item &it );
+bool split_stackable_container_contents_from_stack( item &it, item &empty_stack );
 
 // Traits class to distinguish sequences which are string like from others
 template< class, class = void >
@@ -606,12 +608,23 @@ class TextJsonIn
                             read( run_l, throw_on_error ) &&
                             end_array()
                           ) { // all is good
+                            const auto insert_loaded_item = [&v]( T &&loaded ) {
+                                if( stackable_container_contents_need_split( loaded ) ) {
+                                    T empty_stack;
+                                    split_stackable_container_contents_from_stack( loaded, empty_stack );
+                                    v.insert( std::move( loaded ) );
+                                    v.insert( std::move( empty_stack ) );
+                                } else {
+                                    v.insert( std::move( loaded ) );
+                                }
+                            };
                             // first insert (run_l-1) elements
                             for( int i = 0; i < run_l - 1; i++ ) {
-                                v.insert( element );
+                                T copy = element;
+                                insert_loaded_item( std::move( copy ) );
                             }
                             // micro-optimization, move last element
-                            v.insert( std::move( element ) );
+                            insert_loaded_item( std::move( element ) );
                         } else { // array is malformed, skipping it entirely
                             error_or_false( throw_on_error, "Expected end of array" );
                             seek( prev_pos );
@@ -619,7 +632,14 @@ class TextJsonIn
                         }
                     } else {
                         if( read( element, throw_on_error ) ) {
-                            v.insert( std::move( element ) );
+                            if( stackable_container_contents_need_split( element ) ) {
+                                T empty_stack;
+                                split_stackable_container_contents_from_stack( element, empty_stack );
+                                v.insert( std::move( element ) );
+                                v.insert( std::move( empty_stack ) );
+                            } else {
+                                v.insert( std::move( element ) );
+                            }
                         } else {
                             skip_value();
                         }

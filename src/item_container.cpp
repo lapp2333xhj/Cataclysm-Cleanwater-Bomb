@@ -184,9 +184,43 @@ int item::insert_cost( const item &it ) const
     return contents.insert_cost( it );
 }
 
+static bool is_stackable_container_stack( const item &it )
+{
+    return it.count_by_charges() && it.charges > 1 && it.is_container();
+}
+
+bool stackable_container_contents_need_split( const item &it )
+{
+    return is_stackable_container_stack( it ) && !it.container_type_pockets_empty();
+}
+
+bool split_stackable_container_contents_from_stack( item &it, item &empty_stack )
+{
+    if( !stackable_container_contents_need_split( it ) ) {
+        return false;
+    }
+
+    const int old_charges = it.charges;
+    empty_stack = it;
+    it.charges = 1;
+    empty_stack.charges = old_charges - 1;
+    empty_stack.get_contents().clear_pockets_if( []( const item_pocket &pocket ) {
+        return pocket.is_type( pocket_type::CONTAINER );
+    } );
+    it.update_inherited_flags();
+    empty_stack.update_inherited_flags();
+    DebugLog( D_INFO, D_MAIN ) << string_format(
+        "Loaded stackable container %s with contents and %d charges; split off %d empty container(s).",
+        it.tname(), old_charges, old_charges - 1 );
+    return true;
+}
+
 ret_val<void> item::put_in( const item &payload, pocket_type pk_type,
                             const bool unseal_pockets, Character *carrier, const bool quiet )
 {
+    if( is_stackable_container_stack( *this ) ) {
+        return ret_val<void>::make_failure( _( "can't put contents into a stackable container stack" ) );
+    }
     ret_val<item *> result = contents.insert_item( payload, pk_type, false, unseal_pockets );
     if( !result.success() ) {
         if( !quiet ) {
@@ -722,6 +756,9 @@ int item::fill_with( const item &contained, const int amount,
                      Character *carrier )
 {
     if( amount <= 0 ) {
+        return 0;
+    }
+    if( is_stackable_container_stack( *this ) ) {
         return 0;
     }
 

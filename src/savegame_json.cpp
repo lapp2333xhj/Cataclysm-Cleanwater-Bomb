@@ -258,6 +258,49 @@ static tripoint_bub_ms read_legacy_creature_pos( const JsonObject &data )
     return pos;
 }
 
+static void split_loaded_stackable_container_contents( std::list<item> &items )
+{
+    if( std::none_of( items.begin(), items.end(), stackable_container_contents_need_split ) ) {
+        return;
+    }
+
+    std::list<item> corrected;
+    for( item &it : items ) {
+        if( stackable_container_contents_need_split( it ) ) {
+            item empty_stack;
+            split_stackable_container_contents_from_stack( it, empty_stack );
+            corrected.emplace_back( std::move( it ) );
+            corrected.emplace_back( std::move( empty_stack ) );
+        } else {
+            corrected.emplace_back( std::move( it ) );
+        }
+    }
+    items = std::move( corrected );
+}
+
+static void split_loaded_stackable_container_contents( std::vector<item> &items )
+{
+    const size_t split_count = static_cast<size_t>( std::count_if(
+                                   items.begin(), items.end(), stackable_container_contents_need_split ) );
+    if( split_count == 0 ) {
+        return;
+    }
+
+    std::vector<item> corrected;
+    corrected.reserve( items.size() + split_count );
+    for( item &it : items ) {
+        if( stackable_container_contents_need_split( it ) ) {
+            item empty_stack;
+            split_stackable_container_contents_from_stack( it, empty_stack );
+            corrected.emplace_back( std::move( it ) );
+            corrected.emplace_back( std::move( empty_stack ) );
+        } else {
+            corrected.emplace_back( std::move( it ) );
+        }
+    }
+    items = std::move( corrected );
+}
+
 void item_contents::serialize( JsonOut &json ) const
 {
     if( !contents.empty() || !get_ablative_pockets().empty() || !additional_pockets.empty() ) {
@@ -295,6 +338,7 @@ void item_pocket::deserialize( const JsonObject &data )
 {
     data.allow_omitted_members();
     data.read( "contents", contents );
+    split_loaded_stackable_container_contents( contents );
     int saved_type_int;
     data.read( "pocket_type", saved_type_int );
     _saved_type = static_cast<pocket_type>( saved_type_int );
@@ -912,6 +956,7 @@ void Character::load( const JsonObject &data )
     if( data.has_array( "worn" ) ) {
         std::list<item> items;
         data.read( "worn", items );
+        split_loaded_stackable_container_contents( items );
         worn = outfit( items );
     } else {
         data.read( "worn", worn );
@@ -2469,6 +2514,7 @@ void inventory::json_load_items( const JsonArray &ja )
         tmp.deserialize( jo );
         batch.emplace_back( std::move( tmp ) );
     }
+    split_loaded_stackable_container_contents( batch );
     add_items_bulk( std::move( batch ), true, false );
 }
 
@@ -3737,6 +3783,8 @@ void vehicle_part::deserialize( const JsonObject &data )
     data.read( "items", items );
     data.read( "tools", tools );
     data.read( "salvageable", salvageable );
+    split_loaded_stackable_container_contents( tools );
+    split_loaded_stackable_container_contents( salvageable );
     data.read( "target_first_x", target.first.x() );
     data.read( "target_first_y", target.first.y() );
     data.read( "target_first_z", target.first.z() );

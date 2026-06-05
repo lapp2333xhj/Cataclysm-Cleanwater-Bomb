@@ -2169,8 +2169,21 @@ const pocket_data *item_pocket::get_pocket_data() const
     return data;
 }
 
+static bool is_invalid_stackable_container_payload( const item &it )
+{
+    return it.count_by_charges() && it.charges > 1 &&
+           it.is_container() && !it.container_type_pockets_empty();
+}
+
 void item_pocket::add( const item &it, item **ret )
 {
+    if( is_invalid_stackable_container_payload( it ) ) {
+        debugmsg( "tried to add stackable container stack with contents to a pocket: %s", it.tname() );
+        if( ret != nullptr ) {
+            *ret = nullptr;
+        }
+        return;
+    }
     contents.push_back( it );
     if( ret == nullptr ) {
         restack();
@@ -2185,6 +2198,10 @@ void item_pocket::add( const item &it, item **ret )
 
 void item_pocket::add( const item &it, const int copies, std::vector<item *> &added )
 {
+    if( is_invalid_stackable_container_payload( it ) ) {
+        debugmsg( "tried to add stackable container stack with contents to a pocket: %s", it.tname() );
+        return;
+    }
     for( auto iter = contents.insert( contents.end(), copies, it ); iter != contents.end(); iter++ ) {
         added.push_back( &*iter );
     }
@@ -2260,6 +2277,10 @@ std::list<item> &item_pocket::edit_contents()
 ret_val<item *> item_pocket::insert_item( const item &it,
         const bool into_bottom, bool restack_charges, bool ignore_contents )
 {
+    if( is_invalid_stackable_container_payload( it ) ) {
+        return ret_val<item *>::make_failure( nullptr,
+                                              _( "can't put a stackable container stack with contents in a pocket" ) );
+    }
     ret_val<item_pocket::contain_code> containable = can_contain( it, ignore_contents );
 
     if( !containable.success() ) {

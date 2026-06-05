@@ -512,18 +512,36 @@ bool JsonValue::read( cata::colony<T> &v, bool throw_on_error ) const
                 if( rle_element[ 0 ].read( element, throw_on_error ) &&
                     rle_element[ 1 ].read( run_l, throw_on_error )
                   ) { // all is good
+                    const auto insert_loaded_item = [&v]( T &&loaded ) {
+                        if( stackable_container_contents_need_split( loaded ) ) {
+                            T empty_stack;
+                            split_stackable_container_contents_from_stack( loaded, empty_stack );
+                            v.insert( std::move( loaded ) );
+                            v.insert( std::move( empty_stack ) );
+                        } else {
+                            v.insert( std::move( loaded ) );
+                        }
+                    };
                     // first insert (run_l-1) elements
                     for( int i = 0; i < run_l - 1; i++ ) {
-                        v.insert( element );
+                        T copy = element;
+                        insert_loaded_item( std::move( copy ) );
                     }
                     // micro-optimization, move last element
-                    v.insert( std::move( element ) );
+                    insert_loaded_item( std::move( element ) );
                 } else { // array is malformed, skipping it entirely
                     error_or_false( throw_on_error, "Expected end of array" );
                 }
             } else {
                 if( jv.read( element, throw_on_error ) ) {
-                    v.insert( std::move( element ) );
+                    if( stackable_container_contents_need_split( element ) ) {
+                        T empty_stack;
+                        split_stackable_container_contents_from_stack( element, empty_stack );
+                        v.insert( std::move( element ) );
+                        v.insert( std::move( empty_stack ) );
+                    } else {
+                        v.insert( std::move( element ) );
+                    }
                 }
             }
         }
