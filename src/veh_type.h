@@ -122,9 +122,12 @@ enum vpart_bitflags : int {
     VPFLAG_INOPERABLE_SMALL,
     VPFLAG_IGNORE_HEIGHT_REQUIREMENT,
     VPFLAG_NL_BOILER,
+    VPFLAG_BALLOON,
+    VPFLAG_PROPELLER,
 
     NUM_VPFLAGS
 };
+
 
 struct vpslot_engine {
     bool was_loaded = false;
@@ -171,6 +174,24 @@ struct vpslot_rotor {
 
     void deserialize( const JsonObject &jo );
 };
+
+struct vpslot_propeller {
+    bool was_loaded = false;
+
+    int propeller_diameter = 1;
+
+    void deserialize( const JsonObject &jo );
+};
+
+struct vpslot_balloon {
+    bool was_loaded = false;
+
+    // effective lifting "height"/volume of the balloon, used to compute lift in kg
+    float height = 0.0f;
+
+    void deserialize( const JsonObject &jo );
+};
+
 
 struct vpslot_workbench {
     // Base multiplier applied for crafting here
@@ -335,7 +356,10 @@ class vpart_info
         std::optional<vpslot_engine> engine_info;
         std::optional<vpslot_wheel> wheel_info;
         std::optional<vpslot_rotor> rotor_info;
+        std::optional<vpslot_propeller> propeller_info;
+        std::optional<vpslot_balloon> balloon_info;
         std::optional<vpslot_terrain_transform> transform_terrain_info;
+
         //Enchantments
         std::vector<enchantment_id> enchantments;
         std::optional<effect_on_condition_id> activatable_eoc;

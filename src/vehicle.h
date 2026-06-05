@@ -1834,11 +1834,19 @@ class vehicle
          * is the vehicle flying? is it a rotorcraft?
          */
         double lift_thrust_of_rotorcraft( map &here, bool fuelled, bool safe = false ) const;
+        // Total lift in newtons provided by balloon parts (lighter-than-air gas bags)
+        double total_balloon_lift() const;
         bool has_sufficient_rotorlift( map &here ) const;
+        // True when buoyant balloon lift meets or exceeds the vehicle's weight
+        bool has_sufficient_balloonlift( map &here ) const;
+
         int get_z_change() const;
         bool is_flying_in_air() const;
         void set_flying( bool new_flying_value );
         bool is_rotorcraft( map &here ) const;
+        // A lighter-than-air craft: kept aloft by balloons, driven by propellers
+        bool is_airship( map &here ) const;
+
         // Can the vehicle safely fly? E.g. there haven't been any player modifications
         // of non-simple parts
         bool is_flyable() const;
@@ -2425,6 +2433,9 @@ class vehicle
         std::vector<int> loose_parts; // NOLINT(cata-serialize)
         std::vector<int> wheelcache; // NOLINT(cata-serialize)
         std::vector<int> rotors; // NOLINT(cata-serialize)
+        std::vector<int> balloons; // NOLINT(cata-serialize)
+        std::vector<int> propellers; // NOLINT(cata-serialize)
+
         std::vector<int> rail_wheelcache; // NOLINT(cata-serialize)
         std::vector<int> steering; // NOLINT(cata-serialize)
         // Intended to be a misc list, but currently only security systems.

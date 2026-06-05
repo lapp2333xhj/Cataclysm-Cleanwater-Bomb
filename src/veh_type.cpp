@@ -115,7 +115,10 @@ static const std::unordered_map<std::string, vpart_bitflags> vpart_bitflag_map =
     { "WALL_MOUNTED", VPFLAG_WALL_MOUNTED },
     { "WHEEL", VPFLAG_WHEEL },
     { "ROTOR", VPFLAG_ROTOR },
+    { "BALLOON", VPFLAG_BALLOON },
+    { "PROPELLER", VPFLAG_PROPELLER },
     { "FLOATS", VPFLAG_FLOATS },
+
     { "NO_LEAK", VPFLAG_NO_LEAK },
     { "DOME_LIGHT", VPFLAG_DOME_LIGHT },
     { "AISLE_LIGHT", VPFLAG_AISLE_LIGHT },
@@ -374,7 +377,22 @@ void vpart_info::load( const JsonObject &jo, const std::string_view src )
         rotor_info->deserialize( jo );
     }
 
+    if( has_flag( "PROPELLER" ) ) {
+        if( !propeller_info ) {
+            propeller_info.emplace();
+        }
+        propeller_info->deserialize( jo );
+    }
+
+    if( has_flag( "BALLOON" ) ) {
+        if( !balloon_info ) {
+            balloon_info.emplace();
+        }
+        balloon_info->deserialize( jo );
+    }
+
     if( has_flag( "WORKBENCH" ) ) {
+
         mandatory( jo, was_loaded, "workbench", workbench_info );
     }
 
@@ -438,6 +456,23 @@ void vpslot_rotor::deserialize( const JsonObject &jo )
 
     was_loaded = true;
 }
+
+void vpslot_propeller::deserialize( const JsonObject &jo )
+{
+    optional( jo, was_loaded, "propeller_diameter", propeller_diameter, 1 );
+
+    was_loaded = true;
+}
+
+void vpslot_balloon::deserialize( const JsonObject &jo )
+{
+    // CBN-faithful: "height" is the per-part lift in kilograms.
+    optional( jo, was_loaded, "height", height, 1.0f );
+
+    was_loaded = true;
+}
+
+
 
 void vpslot_workbench::deserialize( const JsonObject &jo )
 {

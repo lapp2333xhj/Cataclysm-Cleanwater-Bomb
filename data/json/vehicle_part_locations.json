@@ -116,5 +116,21 @@
     "id": "on_windshield",
     "name": "On Window",
     "z_order": -1
+  },
+  {
+    "type": "vehicle_part_location",
+    "id": "structural",
+    "name": "Structural",
+    "desc": "An overhead structural element such as an external balloon",
+    "z_order": 9,
+    "list_order": 5
+  },
+  {
+    "type": "vehicle_part_location",
+    "id": "anywhere",
+    "name": "Anywhere",
+    "desc": "Can be installed in any location",
+    "z_order": 9,
+    "list_order": 12
   }
 ]

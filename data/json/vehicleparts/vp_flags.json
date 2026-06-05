@@ -752,5 +752,55 @@
     "id": "NL_BOILER",
     "type": "json_flag",
     "info": "This part functions as a boiler from the nether."
+  },
+  {
+    "id": "BALLOON",
+    "type": "json_flag",
+    "info": "This part is a gas balloon that provides lift to keep an airship aloft."
+  },
+  {
+    "id": "PROPELLER",
+    "type": "json_flag",
+    "info": "This part is a propeller that provides thrust to move an airship."
+  },
+  {
+    "id": "EXTENDABLE",
+    "type": "json_flag",
+    "info": "This part can be extended into adjacent tiles of the same part."
+  },
+  {
+    "id": "SHOCK_IMMUNE",
+    "type": "json_flag",
+    "info": "This part is immune to shock damage from collisions."
+  },
+  {
+    "id": "SHOCK_RESISTANT",
+    "type": "json_flag",
+    "info": "This part is resistant to shock damage from collisions."
+  },
+  {
+    "id": "NOCOLLIDE",
+    "type": "json_flag",
+    "info": "This part does not collide with anything."
+  },
+  {
+    "id": "NOCOLLIDEBELOW",
+    "type": "json_flag",
+    "info": "This part does not collide with terrain on the z-level below it."
+  },
+  {
+    "id": "FOLDABLE",
+    "type": "json_flag",
+    "info": "This part can be folded up for storage and transport."
+  },
+  {
+    "id": "MANUAL",
+    "type": "json_flag",
+    "info": "This part lacks the electronics for remote operation and must be operated by hand."
+  },
+  {
+    "id": "LADDER",
+    "type": "json_flag",
+    "info": "This part is a ladder, letting you climb down from the vehicle."
   }
 ]

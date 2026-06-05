@@ -4102,14 +4102,23 @@ int target_vmiph = std::max( { at_vel_in_vmi, 1000, max_velocity( here, fueled )
 
 int vehicle::rotor_acceleration( map &here, const bool fueled, int at_vel_in_vmi ) const
 {
-    ( void )at_vel_in_vmi;
     if( !( engine_on || is_flying ) ) {
     return 0;
 }
-const int accel_at_vel = 100 * lift_thrust_of_rotorcraft( here,
-                         fueled ) / to_kilogram( total_mass( here ) );
-return cmps_to_vmiph( accel_at_vel );
+if( rotors.empty() ) {
+    // airship: forward thrust comes from propellers, not rotor lift
+    int target_vmiph = std::max( { at_vel_in_vmi, 1000, max_rotor_velocity( here, fueled ) / 4 } );
+        int cmps = vmiph_to_cmps( target_vmiph );
+        double weight = to_kilogram( total_mass( here ) );
+        int engine_power_ratio = units::to_watt( total_power( here, fueled ) ) / weight;
+        int accel_at_vel = 100 * 100 * engine_power_ratio / cmps;
+        return cmps_to_vmiph( accel_at_vel );
+    }
+    const int accel_at_vel = 100 * lift_thrust_of_rotorcraft( here,
+                             fueled ) / to_kilogram( total_mass( here ) );
+    return cmps_to_vmiph( accel_at_vel );
 }
+
 
 int vehicle::water_acceleration( map &here, const bool fueled, int at_vel_in_vmi ) const
 {
@@ -4242,6 +4251,14 @@ int vehicle::max_water_velocity( map &here, const bool fueled ) const
 
 int vehicle::max_rotor_velocity( map &here, const bool fueled ) const
 {
+    if( rotors.empty() ) {
+    // airship: thrust comes from propellers, top speed limited by air drag
+    // engine_power = c_air_drag * velocity^3  ->  v = cbrt( power / c_air_drag )
+    const int total_engine_w = units::to_watt( total_power( here, fueled ) );
+        const double max_air_mps = std::cbrt( total_engine_w / coeff_air_drag() );
+        // airships are slow, cap their top speed well below rotorcraft
+        return std::min( 5001, mps_to_vmiph( max_air_mps ) );
+    }
     const double max_air_mps = std::sqrt( lift_thrust_of_rotorcraft( here,
                                           fueled ) / coeff_air_drag() );
     // helicopters just cannot go over 250mph at very maximum
@@ -4249,6 +4266,7 @@ int vehicle::max_rotor_velocity( map &here, const bool fueled ) const
     // due to the rotor tips going supersonic.
     return std::min( 25501, mps_to_vmiph( max_air_mps ) );
 }
+
 
 int vehicle::max_velocity( map &here, const bool fueled ) const
 {
@@ -4286,10 +4304,17 @@ int vehicle::safe_ground_velocity( map &here, const bool fueled ) const
 
 int vehicle::safe_rotor_velocity( map &here, const bool fueled ) const
 {
+    if( rotors.empty() ) {
+    // airship: safe cruise speed from propeller thrust against air drag
+    const int effective_engine_w = units::to_watt( total_power( here, fueled, true ) );
+        const double safe_air_mps = std::cbrt( effective_engine_w / coeff_air_drag() );
+        return std::min( 4501, mps_to_vmiph( safe_air_mps ) );
+    }
     const double max_air_mps = std::sqrt( lift_thrust_of_rotorcraft( here, fueled,
                                           true ) / coeff_air_drag() );
     return std::min( 22501, mps_to_vmiph( max_air_mps ) );
 }
+
 
 // the same physics as max_water_velocity, but with a smaller engine power
 int vehicle::safe_water_velocity( map &here, const bool fueled ) const
@@ -4774,11 +4799,46 @@ bool vehicle::has_sufficient_rotorlift( map &here ) const
     return lift_thrust_of_rotorcraft( here, true ) > to_kilogram( total_mass( here ) ) * 9.8;
 }
 
+double vehicle::total_balloon_lift() const
+{
+    // Buoyant lift in newtons. Each balloon part declares a "balloon_height" value
+    // which we treat as the effective volume of lifting gas in cubic meters.
+    // Net lift of a helium/hydrogen envelope near sea level is roughly 1.1 kg/m^3.
+    // Damaged envelopes leak gas, scaling lift down with their remaining health.
+    constexpr double net_lift_kg_per_m3 = 1.1;
+    double lift_kg = 0.0;
+    for( const int balloon : balloons ) {
+        const vehicle_part &vp = parts[balloon];
+        if( vp.is_broken() || vp.removed ) {
+            continue;
+        }
+        if( !vp.info().balloon_info ) {
+            continue;
+        }
+        lift_kg += vp.info().balloon_info->height * net_lift_kg_per_m3 * vp.health_percent();
+    }
+    // convert to newtons.
+    return lift_kg * 9.8;
+}
+
+bool vehicle::has_sufficient_balloonlift( map &here ) const
+{
+    // comparison of newton to newton - convert kg to newton.
+    return total_balloon_lift() >= to_kilogram( total_mass( here ) ) * 9.8;
+}
+
+bool vehicle::is_airship( map &here ) const
+{
+    // A lighter-than-air craft floats on its balloons and is steered by propellers.
+    return !balloons.empty() && has_driver( here ) && has_sufficient_balloonlift( here );
+}
+
 bool vehicle::is_rotorcraft( map &here ) const
 {
-    return !rotors.empty() && has_driver( here ) &&
-    has_sufficient_rotorlift( here );
+    return ( !rotors.empty() && has_driver( here ) &&
+    has_sufficient_rotorlift( here ) ) || is_airship( here );
 }
+
 
 bool vehicle::is_flyable() const
 {
@@ -6784,7 +6844,10 @@ void vehicle::refresh( const bool remove_fakes )
     wheelcache.clear();
     rail_wheelcache.clear();
     rotors.clear();
+    balloons.clear();
+    propellers.clear();
     steering.clear();
+
     speciality.clear();
     floating.clear();
     batteries.clear();
@@ -6870,6 +6933,13 @@ void vehicle::refresh( const bool remove_fakes )
         if( vpi.has_flag( VPFLAG_ROTOR ) ) {
             rotors.push_back( p );
         }
+        if( vpi.has_flag( VPFLAG_BALLOON ) ) {
+            balloons.push_back( p );
+        }
+        if( vpi.has_flag( VPFLAG_PROPELLER ) ) {
+            propellers.push_back( p );
+        }
+
         if( vp.part().is_battery() && !vp.part().has_flag( vp_flag::carried_flag ) ) {
             batteries.push_back( p );
         }
