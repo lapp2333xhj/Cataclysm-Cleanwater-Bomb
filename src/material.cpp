@@ -93,11 +93,11 @@ void material_type::load( const JsonObject &jsobj, std::string_view )
             _res_was_loaded.emplace_back( jmemb.name() );
         }
     }
-    else if( was_loaded ) {
+    if( was_loaded ) {
         // A temporary solution, manually add `extend` support.
         // Handwritten data instead of going through generic_factory, but this processing is really crude.
         // The `delete` option may cause more bugs and is not currently being considered for handling.
-        if( jsobj.has_object( "extend" ) && jsobj.has_string("copy-from") ) {
+        if( jsobj.has_object( "extend" ) ) {
             JsonObject ext = jsobj.get_object( "extend" );
             ext.allow_omitted_members();
             if( ext.has_object("resist") ) {
