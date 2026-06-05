@@ -4830,13 +4830,18 @@ bool vehicle::has_sufficient_balloonlift( map &here ) const
 bool vehicle::is_airship( map &here ) const
 {
     // A lighter-than-air craft floats on its balloons and is steered by propellers.
-    return !balloons.empty() && has_driver( here ) && has_sufficient_balloonlift( here );
+    // Buoyancy keeps it aloft whether or not a pilot is aboard, so - matching CBN -
+    // we do not require a driver here. Without a pilot it simply hovers in place
+    // instead of crashing (see issue #74).
+    return !balloons.empty() && has_sufficient_balloonlift( here );
 }
 
 bool vehicle::is_rotorcraft( map &here ) const
 {
-    return ( !rotors.empty() && has_driver( here ) &&
-    has_sufficient_rotorlift( here ) ) || is_airship( here );
+    // Like CBN, flightworthiness depends only on having enough lift, not on a
+    // pilot being seated. An unmanned craft with sufficient lift hovers rather
+    // than dropping out of the sky.
+    return ( !rotors.empty() && has_sufficient_rotorlift( here ) ) || is_airship( here );
 }
 
 
