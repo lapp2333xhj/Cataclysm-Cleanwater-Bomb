@@ -2083,15 +2083,29 @@ bool cata_tiles::draw_from_id_string_internal( const std::string &id, TILE_CATEG
                                 tileset_ptr->get_prevent_occlusion_min_dist();
             const float d_max = prevent_occlusion_max_dist > 0.0 ? prevent_occlusion_max_dist :
                                 tileset_ptr->get_prevent_occlusion_max_dist();
-            const float d_min_sq = d_min * d_min;
-            const float d_max_sq = d_max * d_max;
-
-            if( dist_sq <= d_min_sq ) {
-                retract = 100;
-            } else if( dist_sq >= d_max_sq ) {
-                retract = 0;
+            // Squared-distance fast path, valid only for well-ordered
+            // non-negative thresholds (d_min >= 0 && d_max > d_min) — the normal
+            // runtime config. Squaring preserves ordering only for non-negative
+            // operands, and d_max > d_min guarantees the interpolation slope is
+            // 1/(d_max-d_min) (never the d_range<=0 step branch). Under those
+            // constraints this is exactly equivalent to the original formula but
+            // skips the per-tile std::sqrt outside the [d_min,d_max] annulus
+            // (most visible tiles sit beyond d_max -> retract 0). Any other
+            // threshold config (negative, inverted, or the disabled default
+            // d_min=-1,d_max=0) falls through to the unchanged original formula.
+            if( d_min >= 0.0f && d_max > d_min ) {
+                const float d_min_sq = d_min * d_min;
+                const float d_max_sq = d_max * d_max;
+                if( dist_sq <= d_min_sq ) {
+                    retract = 100;
+                } else if( dist_sq >= d_max_sq ) {
+                    retract = 0;
+                } else {
+                    const float distance = std::sqrt( dist_sq );
+                    retract = static_cast<int>( 100.0 * ( 1.0 - std::clamp( ( distance - d_min ) /
+                                                          ( d_max - d_min ), 0.0f, 1.0f ) ) );
+                }
             } else {
-                // Interpolation band: real distance required.
                 const float distance = std::sqrt( dist_sq );
                 const float d_range = d_max - d_min;
                 const float d_slope = d_range <= 0.0f ? 100.0 : 1.0 / d_range;
