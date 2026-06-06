@@ -2789,51 +2789,123 @@ void options_manager::add_options_world_default()
 
     add_empty_line();
 
-    // These optiosn are purposefully and permanently hidden. It can only be modified through the sliders when creating a new world.
-    // As such there is no name or description to show, those are blanked.
-    add( "SPAWN_DENSITY", "world_default", translation(), translation(), 0.0, 50.0, 1.0, 0.1,
-         COPT_ALWAYS_HIDE
+    add_option_group( "world_default", Group( "game_world_opts", to_translation( "Game world options" ),
+                      to_translation( "Options regarding game world.  These are also configurable via sliders on the basic creation screen." ) ),
+    [&]( const std::string & page_id ) {
+        add( "CITY_SIZE", page_id, to_translation( "Size of cities" ),
+             to_translation( "A number determining how large cities are.  A higher number means larger cities.  0 disables cities, roads and any scenario requiring a city start." ),
+             0, 16, 8
+           );
+
+        add( "CITY_SPACING", page_id, to_translation( "City spacing" ),
+             to_translation( "A number determining how far apart cities are.  A higher number means cities are further apart.  Warning, small numbers lead to very slow mapgen." ),
+             0, 8, 4
+           );
+
+        add( "SPAWN_DENSITY", page_id, to_translation( "Spawn rate scaling factor" ),
+             to_translation( "A scaling factor that determines density of monster spawns.  A higher number means more monsters." ),
+             0.0, 50.0, 1.0, 0.1
+           );
+
+        add( "ITEM_SPAWNRATE", page_id, to_translation( "Item spawn scaling factor" ),
+             to_translation( "A scaling factor that determines density of item spawns.  A higher number means more items." ),
+             0.01, 10.0, 1.0, 0.01
+           );
+
+        add( "NPC_SPAWNTIME", page_id, to_translation( "Random NPC spawn time" ),
+             to_translation( "Baseline average number of days between random NPC spawns.  Average duration goes up with the number of NPCs already spawned.  A higher number means fewer NPCs.  Set to 0 days to disable random NPCs." ),
+             0.0, 100.0, 4.0, 0.01
+           );
+
+        add( "EVOLUTION_INVERSE_MULTIPLIER", page_id,
+             to_translation( "Monster evolution slowdown" ),
+             to_translation( "A multiplier for the time between monster upgrades.  For example a value of 2.00 would cause evolution to occur at half speed.  Set to 0.00 to turn off monster upgrades." ),
+             0.0, 100, 1.0, 0.01
+           );
+    } );
+    add_empty_line();
+
+    add_option_group( "world_default", Group( "monster_props_opts",
+                      to_translation( "Monster properties options" ),
+                      to_translation( "Options regarding monster properties." ) ),
+    [&]( const std::string & page_id ) {
+        add( "MONSTER_SPEED", page_id, to_translation( "Monster speed" ),
+             to_translation( "Determines the movement rate of monsters.  A higher value increases monster speed and a lower reduces it.  Requires world reset." ),
+             1, 1000, 100, COPT_NO_HIDE, "%i%%"
+           );
+
+        add( "MONSTER_RESILIENCE", page_id, to_translation( "Monster resilience" ),
+             to_translation( "Determines how much damage monsters can take.  A higher value makes monsters more resilient and a lower makes them more flimsy.  Requires world reset." ),
+             1, 1000, 100, COPT_NO_HIDE, "%i%%"
+           );
+    } );
+
+    add_empty_line();
+
+    add( "DEFAULT_REGION", "world_default", to_translation( "Default region type" ),
+         to_translation( "(WIP feature) Determines terrain, shops, plants, and more." ),
+    { { "default", to_translation( "default" ) } }, "default"
        );
 
-    add( "ITEM_SPAWNRATE", "world_default", translation(), translation(), 0.01, 10.0, 1.0, 0.01,
-         COPT_ALWAYS_HIDE
-       );
+    add_empty_line();
 
-    add( "NPC_SPAWNTIME", "world_default", translation(), translation(), 0.0, 100.0, 4.0, 0.01,
-         COPT_ALWAYS_HIDE
-       );
+    add_option_group( "world_default", Group( "spawn_time_opts", to_translation( "World time options" ),
+                      to_translation( "Options regarding the passage of time in the world." ) ),
+    [&]( const std::string & page_id ) {
+        add( "SEASON_LENGTH", page_id, to_translation( "Season length" ),
+             to_translation( "Season length, in days.  Warning: Very little other than the duration of seasons scales with this value, so adjusting it may cause nonsensical results." ),
+             14, 127, 91
+           );
 
-    add( "MONSTER_SPEED", "world_default", translation(), translation(), 1, 1000, 100, COPT_ALWAYS_HIDE,
-         "%i%%"
-       );
+        add( "CONSTRUCTION_SCALING", page_id, to_translation( "Construction scaling" ),
+             to_translation( "Sets the time of construction in percents.  '50' is two times faster than default, '200' is two times longer.  '0' automatically scales construction time to match the world's season length." ),
+             0, 1000, 100
+           );
 
-    add( "MONSTER_RESILIENCE", "world_default", translation(), translation(), 1, 1000, 100,
-         COPT_ALWAYS_HIDE, "%i%%"
-       );
+        add( "ETERNAL_SEASON", page_id, to_translation( "Eternal season" ),
+             to_translation( "If true, keep the initial season for ever." ),
+             false
+           );
 
-    add( "EVOLUTION_INVERSE_MULTIPLIER", "world_default", translation(), translation(),
-         0.0, 100, 1.0, 0.01, COPT_ALWAYS_HIDE
-       );
+        add( "ETERNAL_TIME_OF_DAY", page_id, to_translation( "Day/night cycle" ),
+        to_translation( "Day/night cycle settings.  'Normal' sets a normal cycle.  'Eternal Day' sets eternal day.  'Eternal Night' sets eternal night." ), {
+            { "normal", to_translation( "Normal" ) },
+            { "day", to_translation( "Eternal Day" ) },
+            { "night", to_translation( "Eternal Night" ) },
+        }, "normal"
+           );
+    } );
 
-    add( "SEASON_LENGTH", "world_default", translation(), translation(), 14, 127, 91,
-         COPT_ALWAYS_HIDE );
-
-    add( "CONSTRUCTION_SCALING", "world_default", translation(), translation(), 0, 1000, 100,
-         COPT_ALWAYS_HIDE );
-
-    add( "ETERNAL_SEASON", "world_default", translation(), translation(), false, COPT_ALWAYS_HIDE );
-
-    add( "ETERNAL_TIME_OF_DAY", "world_default", translation(), translation(), "normal", 8,
-         COPT_ALWAYS_HIDE );
+    add_empty_line();
 
     add_option_group( "world_default", Group( "misc_worlddef_opts", to_translation( "Misc options" ),
                       to_translation( "Miscellaneous options." ) ),
     [&]( const std::string & page_id ) {
+        add( "WANDER_SPAWNS", page_id, to_translation( "Wandering hordes" ),
+             to_translation( "If true, emulates zombie hordes.  Zombies can group together into hordes, which can wander around cities and will sometimes move towards noise.  Note: the current implementation does not properly respect obstacles, so hordes can appear to walk through walls under some circumstances.  Must reset world directory after changing for it to take effect." ),
+             false
+           );
+
         add( "BLACK_ROAD", page_id, to_translation( "Surrounded start" ),
              to_translation( "If true, spawn zombies at shelters.  Makes the starting game a lot harder." ),
              false
            );
     } );
+
+    add_empty_line();
+
+    add( "RAD_MUTATION", "world_default", to_translation( "Mutations by radiation" ),
+         to_translation( "If true, radiation causes the player to mutate." ),
+         true
+       );
+
+    add_empty_line();
+
+    add( "CHARACTER_POINT_POOLS", "world_default", to_translation( "Character point pools" ),
+         to_translation( "Allowed point pools for character generation." ),
+    { { "any", to_translation( "Any" ) }, { "multi_pool", to_translation( "Legacy Multipool" ) }, { "story_teller", to_translation( "Survivor" ) } },
+    "story_teller"
+       );
 
     add_empty_line();
 
@@ -3998,7 +4070,7 @@ void options_manager::deserialize( const JsonArray &ja )
         // yay hardcoded list! remove after 0.J
         std::vector<std::string> removed_options = { "DISTANCE_INITIAL_VISIBILITY", "FOV_3D_Z_RANGE", "SAFEMODE",
                                                      "INITIAL_STAT_POINTS", "INITIAL_TRAIT_POINTS", "INITIAL_SKILL_POINTS", "MAX_TRAIT_POINTS",
-                                                     "SKILL_TRAINING_SPEED", "PROFICIENCY_TRAINING_SPEED", "CITY_SPACING", "CITY_SIZE"
+                                                     "SKILL_TRAINING_SPEED", "PROFICIENCY_TRAINING_SPEED"
                                                    };
 
         const std::string name = migrateOptionName( joOptions.get_string( "name" ) );
