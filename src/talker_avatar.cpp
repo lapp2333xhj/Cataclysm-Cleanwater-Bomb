@@ -56,10 +56,10 @@ int talker_avatar_const::parse_mod( const std::string &attribute, const int fact
         modifier = me_chr->has_trait( checked_trait ) ? 1 : 0;
     } else if ( attribute == "LOWFUNC_PSYCHOPATH" )
     {
-        modifier = me_chr-> has_flag( json_flag_PSYCHOPATH ) && get_int() <= 8 ? 1 : 0;
+        modifier = me_chr-> has_flag( json_flag_PSYCHOPATH ) && me_chr->get_int() <= 8 ? 1 : 0;
     } else if ( attribute == "HIGHFUNC_PSYCHOPATH" )
     {
-        modifier = me_chr-> has_flag( json_flag_PSYCHOPATH ) && get_int() >= 16 ? 1 : 0;
+        modifier = me_chr-> has_flag( json_flag_PSYCHOPATH ) && me_chr->get_int() >= 16 ? 1 : 0;
     }
     
     modifier *= factor;
