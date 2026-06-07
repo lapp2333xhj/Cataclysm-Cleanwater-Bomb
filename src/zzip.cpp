@@ -438,6 +438,65 @@ std::optional<zzip> zzip::load(
     return ret;
 }
 
+std::optional<zzip> zzip::load_readonly_unshared( std::filesystem::path const &path )
+{
+    // Background-thread read path. Unlike load(), this NEVER touches the global
+    // cached_contexts map (unsynchronized) and leaves ctx_ null, so the caller must
+    // decompress only via get_file_to_with_dctx with its own private DCtx.
+    std::shared_ptr<mmap_file> file = mmap_file::map_writeable_file( path );
+    if( !file ) {
+        return {};
+    }
+
+    uint64_t footer_len = 0;
+    uint64_t footer_checksum = 0;
+    std::tie( footer_len, footer_checksum ) = read_footer_len_and_checksum( file->base(), file->len() );
+    if( footer_len == 0 || footer_len > file->len() ) {
+        // Footer needs recovery; that requires a compression context. Bail and let
+        // the main thread's synchronous load handle it.
+        return {};
+    }
+    char *base = reinterpret_cast<char *>( file->base() );
+    uint64_t hash = XXH64( base + file->len() - footer_len, footer_len, kCheckumSeed );
+    if( hash != footer_checksum ) {
+        return {};
+    }
+    JsonObject footer;
+    try {
+        std::shared_ptr<zzip_flexbuffer_storage> storage{ std::make_shared<zzip_flexbuffer_storage>( file ) };
+        flexbuffers::Reference root = flexbuffer_root_from_storage( storage );
+        std::shared_ptr<parsed_flexbuffer> flexbuffer = std::make_shared<zzip_flexbuffer>( std::move( storage ) );
+        footer = JsonValue( std::move( flexbuffer ), root, nullptr, 0 );
+    } catch( std::exception & ) {
+        return {};
+    }
+
+    // ctx_ deliberately left null: this archive must only be read via *_with_dctx.
+    return std::optional<zzip>{ std::in_place, zzip{ std::move( file ), std::move( footer ) } };
+}
+
+void *zzip::create_private_dctx( std::filesystem::path const &dictionary )
+{
+    ZSTD_DCtx *dctx = ZSTD_createDCtx();
+    if( !dictionary.empty() ) {
+        std::shared_ptr<const mmap_file> dictionary_file = mmap_file::map_file( dictionary );
+        if( dictionary_file ) {
+            // ZSTD_DCtx_loadDictionary takes a COPY of the dictionary into the DCtx,
+            // so the mmap can be released right after this call (unlike the
+            // _byReference variant used by the shared-context path).
+            ZSTD_DCtx_loadDictionary( dctx, dictionary_file->base(), dictionary_file->len() );
+        }
+    }
+    return dctx;
+}
+
+void zzip::destroy_private_dctx( void *dctx )
+{
+    if( dctx ) {
+        ZSTD_freeDCtx( static_cast<ZSTD_DCtx *>( dctx ) );
+    }
+}
+
 bool zzip::add_file( std::filesystem::path const &zzip_relative_path, std::string_view content )
 {
     size_t estimated_size = ZSTD_compressBound( content.length() );
@@ -568,9 +627,10 @@ std::vector<std::byte> zzip::get_file( std::filesystem::path const &zzip_relativ
     return buf;
 }
 
-size_t zzip::get_file_to( std::filesystem::path const &zzip_relative_path, std::byte *dest,
-                          size_t dest_len ) const
+size_t zzip::get_file_to_with_dctx( std::filesystem::path const &zzip_relative_path,
+                                    std::byte *dest, size_t dest_len, void *dctx_void ) const
 {
+    ZSTD_DCtx *dctx = static_cast<ZSTD_DCtx *>( dctx_void );
     zzip_footer footer{ footer_ };
     std::optional<zzip_file_entry> fparams = footer.get_entry( zzip_relative_path );
     if( !fparams.has_value() ) {
@@ -599,11 +659,29 @@ size_t zzip::get_file_to( std::filesystem::path const &zzip_relative_path, std::
     if( dest_len < file_size ) {
         return 0;
     }
-    size_t actual = ZSTD_decompressDCtx( ctx_->dctx, dest, dest_len, file_base, file_len );
+    size_t actual = ZSTD_decompressDCtx( dctx, dest, dest_len, file_base, file_len );
     if( ZSTD_isError( actual ) ) {
         return 0;
     }
     return actual;
+}
+
+size_t zzip::get_file_to( std::filesystem::path const &zzip_relative_path, std::byte *dest,
+                          size_t dest_len ) const
+{
+    return get_file_to_with_dctx( zzip_relative_path, dest, dest_len, ctx_->dctx );
+}
+
+std::vector<std::byte> zzip::get_file_with_dctx( std::filesystem::path const &zzip_relative_path,
+        void *dctx ) const
+{
+    std::vector<std::byte> buf{};
+    size_t size = get_file_size( zzip_relative_path );
+    buf.resize( size );
+    size_t final_size = get_file_to_with_dctx( zzip_relative_path, buf.data(), size, dctx );
+    // get_file_to returns 0 on error so we return an empty array.
+    buf.resize( final_size );
+    return buf;
 }
 
 size_t zzip::get_content_size() const

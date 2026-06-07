@@ -79,6 +79,27 @@ class zzip
                                          std::filesystem::path const &dictionary = {} );
 
         /**
+         * Opens an archive for READ-ONLY access from a background (non-main) thread
+         * WITHOUT touching the process-global ZSTD context cache, which is not
+         * synchronized. The returned zzip's internal ZSTD context is null, so the
+         * caller MUST decompress only via get_file_with_dctx / get_file_to_with_dctx
+         * passing its own private DCtx — calling get_file / add_file on it will crash.
+         * Returns nullopt if the archive is missing or its footer needs recovery
+         * (recovery needs a compression context; the main thread handles that on its
+         * own synchronous load path).
+         */
+        static std::optional<zzip> load_readonly_unshared( std::filesystem::path const &path );
+
+        /**
+         * Create / destroy a private ZSTD_DCtx with `dictionary` loaded, for use with
+         * get_file_with_dctx on a background thread that must not share the global
+         * context. Returns the ZSTD_DCtx as a void* (keeps zstd out of this header).
+         * Pass the same dictionary path the archive was created with. destroy frees it.
+         */
+        static void *create_private_dctx( std::filesystem::path const &dictionary );
+        static void destroy_private_dctx( void *dctx );
+
+        /**
          * Writes the given file contents under the given file path into the zzip.
          * Returns true on success, false on any error.
          *
@@ -142,6 +163,19 @@ class zzip
         size_t get_file_to( std::filesystem::path const &zzip_relative_path,
                             std::byte *dest,
                             size_t dest_len ) const;
+
+        /**
+         * Thread-safe variants of get_file / get_file_to that decompress through a
+         * caller-supplied ZSTD_DCtx instead of this zzip's shared (process-global)
+         * context. The shared context is not safe for concurrent use, so a background
+         * thread must pass its own private DCtx (with the same dictionary loaded as
+         * was used to create the archive). `dctx` is a ZSTD_DCtx* (void* here to keep
+         * zstd out of this header).
+         */
+        std::vector<std::byte> get_file_with_dctx( std::filesystem::path const &zzip_relative_path,
+                void *dctx ) const;
+        size_t get_file_to_with_dctx( std::filesystem::path const &zzip_relative_path,
+                                      std::byte *dest, size_t dest_len, void *dctx ) const;
 
         /**
          * Removes the files from the zzip.

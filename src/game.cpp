@@ -10200,6 +10200,88 @@ point_rel_sm game::update_map( Character &p, bool z_level_changed )
     return update_map( p2.x(), p2.y(), z_level_changed );
 }
 
+// Queue background reads of the submap quads just beyond the leading edge of the
+// reality bubble in the direction of travel, so the next boundary crossing can
+// skip the synchronous disk read. Called after the bubble has already shifted,
+// so `here.get_abs_sub()` is the post-shift top-left grid submap.
+static void prefetch_leading_edge( const map &here, const point_rel_sm &shift )
+{
+    const int distance = get_option<int>( "SUBMAP_PREFETCH_DISTANCE" );
+    if( distance <= 0 || shift == point_rel_sm::zero ) {
+        return;
+    }
+
+    const point_abs_sm base = here.get_abs_sub().xy();
+    const int player_z = here.get_abs_sub().z();
+    // Bubble center in submap coords, used both for read priority (nearest first)
+    // and for locality-based eviction of stale buffered quads.
+    const point_abs_sm center = base + point( MAPSIZE / 2, MAPSIZE / 2 );
+    const tripoint_abs_omt center_omt =
+        project_to<coords::omt>( tripoint_abs_sm{ center, player_z } );
+
+    // Bubble occupies [base, base + MAPSIZE) on each axis. Expand the scan rect
+    // outward by `distance` only on the axis/axes we're moving along.
+    const int x_lo = base.x() - ( shift.x() < 0 ? distance : 0 );
+    const int x_hi = base.x() + MAPSIZE - 1 + ( shift.x() > 0 ? distance : 0 );
+    const int y_lo = base.y() - ( shift.y() < 0 ? distance : 0 );
+    const int y_hi = base.y() + MAPSIZE - 1 + ( shift.y() > 0 ? distance : 0 );
+
+    // Restrict the z-sweep to the player's own z-level. Measurement showed that
+    // sweeping a few levels around the player queued ~92% non-existent quads
+    // (empty sky above, unexplored deep underground below): the worker then burned
+    // its time on file_exist checks for dead z-levels while the one live leading
+    // edge we are about to cross waited behind them in the queue, so the
+    // synchronous read still hit on the boundary frame. Horizontal crossings keep
+    // the player's z fixed, so queuing only that level lets the worker reach the
+    // real edge immediately. Cost: a z-change (stairs) gets no prefetch, but that
+    // is rare and one level at a time. Widen this if vertical travel needs it.
+    constexpr int Z_RADIUS = 0;
+    const int z_lo = std::max( -OVERMAP_DEPTH, player_z - Z_RADIUS );
+    const int z_hi = std::min( OVERMAP_HEIGHT, player_z + Z_RADIUS );
+
+    // Free any previously buffered quads the player has now moved away from, so a
+    // turn or reversal doesn't leave a stale frontier pinned in memory and the
+    // near edges of the new direction always win the worker's attention.
+    // evict_beyond measures distance in OMTs (quad_dist compares OMT coords), so
+    // convert the submap-space radius (half-bubble + prefetch distance) to OMTs
+    // (1 OMT = 2 submaps), rounding up so we never evict a quad still in range.
+    const int evict_dist_sm = MAPSIZE / 2 + distance + 1;
+    MAPBUFFER.prefetch_evict_beyond( center_omt, ( evict_dist_sm + 1 ) / 2 );
+
+    // Collect unique OMT quads (2x2 submaps share one .map file) outside the bubble,
+    // each tagged with its submap-distance from the player so nearer edges are read
+    // first.
+    std::map<tripoint_abs_omt, int> quads;
+    for( int z = z_lo; z <= z_hi; z++ ) {
+        for( int sx = x_lo; sx <= x_hi; sx++ ) {
+            for( int sy = y_lo; sy <= y_hi; sy++ ) {
+                // Skip submaps already inside the bubble; only prefetch new edges.
+                const bool inside_x = sx >= base.x() && sx < base.x() + MAPSIZE;
+                const bool inside_y = sy >= base.y() && sy < base.y() + MAPSIZE;
+                if( inside_x && inside_y ) {
+                    continue;
+                }
+                const tripoint_abs_omt om =
+                    project_to<coords::omt>( tripoint_abs_sm{ sx, sy, z } );
+                const int dist = std::max( std::abs( sx - center.x() ),
+                                           std::abs( sy - center.y() ) );
+                // Keep the smallest distance seen for this quad (a quad spans 2x2
+                // submaps, so several submaps map to it).
+                const auto it = quads.find( om );
+                if( it == quads.end() ) {
+                    quads.emplace( om, dist );
+                } else if( dist < it->second ) {
+                    it->second = dist;
+                }
+            }
+        }
+    }
+
+    for( const auto &entry : quads ) {
+        MAPBUFFER.prefetch_quad( entry.first, entry.second );
+    }
+}
+
 point_rel_sm game::update_map( int &x, int &y, bool z_level_changed )
 {
     map &here = get_map();
@@ -10244,6 +10326,12 @@ point_rel_sm game::update_map( int &x, int &y, bool z_level_changed )
         here.shift( point_rel_sm( this_shift ) );
         remaining_shift -= this_shift;
     }
+
+    // Asynchronously prefetch the submaps just beyond the leading edge of the
+    // reality bubble in the direction we're moving, so a subsequent shift can
+    // skip the synchronous disk read. Only already-existing chunks are queued;
+    // missing terrain is still generated on the main thread when reached.
+    prefetch_leading_edge( here, shift );
 
     // Shift monsters
     shift_monsters( { shift, 0 } );

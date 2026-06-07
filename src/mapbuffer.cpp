@@ -33,6 +33,7 @@
 #include "std_hash_fs_path.h"
 #include "string_formatter.h"
 #include "submap.h"
+#include "submap_prefetch.h"
 #include "translations.h"
 #include "type_id.h"
 #include "ui_manager.h"
@@ -62,7 +63,12 @@ mapbuffer::~mapbuffer() = default;
 
 void mapbuffer::clear()
 {
+    // Drop any pending/completed background reads first: their captured paths
+    // belong to the world being torn down and must not be consumed afterward.
+    g_submap_prefetcher.clear();
     submaps.clear();
+    // The listing cache is keyed by archive path and belongs to the old world.
+    zzip_listing_cache.clear();
 }
 
 void mapbuffer::clear_outside_reality_bubble()
@@ -157,12 +163,12 @@ bool mapbuffer::submap_exists_approx( const tripoint_abs_sm &p )
             if( world_generator->active_world->has_compression_enabled() ) {
                 cata_path zzip_name = dirname;
                 zzip_name += zzip_suffix;
-                if( !file_exist( zzip_name ) ) {
-                    return false;
-                }
-                std::optional<zzip> z = zzip::load( zzip_name.get_unrelative_path(),
-                                                    ( PATH_INFO::world_base_save_path() / "maps.dict" ).get_unrelative_path() );
-                return z && z->has_file( std::filesystem::u8path( file_name ) );
+                // Route through the cached entry listing instead of a fresh
+                // zzip::load + has_file on every call: same answer, no per-call
+                // mmap + footer parse, and it shares one code path with
+                // unserialize_submaps so the two existence checks cannot drift.
+                const std::unordered_set<std::string> *listing = zzip_listing( zzip_name );
+                return listing && listing->find( file_name ) != listing->end();
             } else {
                 return file_exist( dirname / file_name );
             }
@@ -175,8 +181,57 @@ bool mapbuffer::submap_exists_approx( const tripoint_abs_sm &p )
     return true;
 }
 
+void mapbuffer::prefetch_quad( const tripoint_abs_omt &om_addr, int priority )
+{
+    // Resolve all paths/flags on the main thread (touches world_generator/PATH_INFO),
+    // then hand a self-contained request to the worker. The worker only reads bytes.
+    // An OMT ".map" file holds the 2x2 submap quad for a single z-level.
+    const tripoint_abs_sm sm_base = project_to<coords::sm>( om_addr );
+    bool any_missing = false;
+    for( int dx = 0; dx <= 1 && !any_missing; dx++ ) {
+        for( int dy = 0; dy <= 1 && !any_missing; dy++ ) {
+            if( submaps.find( sm_base + point( dx, dy ) ) == submaps.end() ) {
+                any_missing = true;
+            }
+        }
+    }
+    if( !any_missing ) {
+        return;
+    }
+
+    const cata_path dirname = find_dirname( om_addr );
+    const std::string file_name = quad_file_name( om_addr );
+
+    submap_prefetcher::request_t req;
+    req.om = om_addr;
+    req.entry_name = std::filesystem::u8path( file_name );
+
+    if( world_generator->active_world->has_compression_enabled() ) {
+        cata_path zzip_name = dirname;
+        zzip_name += zzip_suffix;
+        req.compressed = true;
+        req.zzip_path = zzip_name.get_unrelative_path();
+        req.dict_path = ( PATH_INFO::world_base_save_path() / "maps.dict" ).get_unrelative_path();
+    } else {
+        req.compressed = false;
+        req.quad_path = ( dirname / file_name ).get_unrelative_path();
+    }
+
+    g_submap_prefetcher.request( req, priority );
+}
+
+void mapbuffer::prefetch_evict_beyond( const tripoint_abs_omt &center, int max_dist )
+{
+    g_submap_prefetcher.evict_beyond( center, max_dist );
+}
+
 void mapbuffer::save( bool delete_after_save )
 {
+    // The prefetch worker reads the same zzip archives this loop rewrites. Park it
+    // (and force it to drop any cached archive handle) for the duration of the save
+    // so the save path is the sole writer. Resumes on scope exit, even on throw.
+    scoped_prefetch_pause prefetch_pause;
+
     assure_dir_exist( PATH_INFO::current_dimension_save_path() / "maps" );
     int num_saved_submaps = 0;
     int num_total_submaps = submaps.size();
@@ -228,6 +283,10 @@ void mapbuffer::save( bool delete_after_save )
     for( auto &elem : submaps_to_delete ) {
         remove_submap( elem );
     }
+    // save_quad rewrote these archives (add_file / delete_files / compact_to +
+    // rename), so any cached entry listing is now stale. Drop the whole cache;
+    // the next existence probe repopulates the touched archives lazily.
+    zzip_listing_cache.clear();
 }
 
 void mapbuffer::save_quad(
@@ -360,6 +419,30 @@ void mapbuffer::save_quad(
     }
 }
 
+const std::unordered_set<std::string> *mapbuffer::zzip_listing( const cata_path &zzip_path )
+{
+    const std::string key = zzip_path.get_unrelative_path().generic_u8string();
+    const auto it = zzip_listing_cache.find( key );
+    if( it != zzip_listing_cache.end() ) {
+        return &it->second;
+    }
+    if( !file_exist( zzip_path ) ) {
+        return nullptr;
+    }
+    std::optional<zzip> z = zzip::load( zzip_path.get_unrelative_path(),
+                                        ( PATH_INFO::world_base_save_path() / "maps.dict" ).get_unrelative_path() );
+    if( !z ) {
+        return nullptr;
+    }
+    // Snapshot the entry names, then drop the zzip handle (mmap) immediately: we
+    // must not hold it across a save that rewrites this archive.
+    std::unordered_set<std::string> listing;
+    for( const std::filesystem::path &entry : z->get_entries() ) {
+        listing.insert( entry.generic_u8string() );
+    }
+    return &zzip_listing_cache.emplace( key, std::move( listing ) ).first->second;
+}
+
 // We're reading in way too many entities here to mess around with creating sub-objects and
 // seeking around in them, so we're using the json streaming API.
 submap *mapbuffer::unserialize_submaps( const tripoint_abs_sm &p )
@@ -372,11 +455,32 @@ submap *mapbuffer::unserialize_submaps( const tripoint_abs_sm &p )
     cata_path quad_path = dirname / file_name;
 
     bool read = [&] {
+        // Fast path: the background prefetcher may have already read+decompressed
+        // this quad's bytes off the main thread. Parsing (deserialize) still happens
+        // here on the main thread, because it builds submap/string_id state that is
+        // not safe to touch from the worker.
+        std::optional<std::string> prefetched = g_submap_prefetcher.take( om_addr );
+        if( prefetched ) {
+            try {
+                JsonValue jsin = json_loader::from_string( std::move( *prefetched ) );
+                deserialize( jsin );
+                return true;
+            } catch( std::exception &err ) {
+                // Fall through to the normal synchronous load on any parse failure.
+                debugmsg( _( "Failed to parse prefetched submap %1$s: %2$s" ),
+                          om_addr.to_string(), err.what() );
+            }
+        }
+
         if( world_generator->active_world->has_compression_enabled() )
     {
         cata_path zzip_name = dirname;
         zzip_name += zzip_suffix;
-        if( !file_exist( zzip_name ) ) {
+        // Consult the cached entry listing before touching the archive: a column
+        // walked back over re-probes ~84 absent quads, and without this each one
+        // paid a fresh zzip::load (mmap + footer parse). nullptr == archive missing.
+        const std::unordered_set<std::string> *listing = zzip_listing( zzip_name );
+        if( !listing || listing->find( file_name ) == listing->end() ) {
                 return false;
             }
 

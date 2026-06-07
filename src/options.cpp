@@ -222,6 +222,7 @@ options_manager::options_manager()
     pages_.emplace_back( "general", to_translation( "General" ) );
     pages_.emplace_back( "interface", to_translation( "Interface" ) );
     pages_.emplace_back( "graphics", to_translation( "Graphics" ) );
+    pages_.emplace_back( "performance", to_translation( "Performance" ) );
     // when sharing maps only admin is allowed to change these.
     if( !MAP_SHARING::isCompetitive() || MAP_SHARING::isAdmin() ) {
         pages_.emplace_back( "world_default", to_translation( "World Defaults" ) );
@@ -1453,6 +1454,7 @@ void options_manager::init()
     add_options_general();
     add_options_interface();
     add_options_graphics();
+    add_options_performance();
     add_options_world_default();
     add_options_debug();
     add_options_android();
@@ -2784,6 +2786,19 @@ void options_manager::add_options_graphics()
 #endif
     } );
 
+}
+
+void options_manager::add_options_performance()
+{
+    add( "SUBMAP_PREFETCH_DISTANCE", "performance",
+         to_translation( "Submap prefetch distance" ),
+         to_translation( "How many submaps beyond the reality bubble's leading edge to read "
+                         "from disk on a background thread while moving, so crossing a chunk "
+                         "boundary stutters less.  0 disables prefetching.  Only the player's "
+                         "own z-level is prefetched, and reads are served nearest-first, so "
+                         "higher values mainly cost background I/O, not main-thread time." ),
+         0, 6, 2
+       );
 }
 
 void options_manager::add_options_world_default()

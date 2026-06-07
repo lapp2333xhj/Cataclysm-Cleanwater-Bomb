@@ -5,6 +5,8 @@
 #include <list>
 #include <map>
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "coordinates.h"
 
@@ -67,6 +69,18 @@ class mapbuffer
         // Cheaper version of the above for when you don't mind some false results
         bool submap_exists_approx( const tripoint_abs_sm &p );
 
+        // Queue a background read+decompress of the quad containing the given OMT,
+        // so a later lookup_submap can skip the synchronous disk I/O. No-op if the
+        // submap is already in memory. `priority` is the quad's submap-distance from
+        // the player: the worker serves the smallest first, so near edges are read
+        // before the far frontier. Only the (thread-safe) read happens on the
+        // worker; parsing still occurs on the main thread in unserialize_submaps.
+        void prefetch_quad( const tripoint_abs_omt &om_addr, int priority );
+
+        // Forward to the background prefetcher: drop buffered/queued quads farther
+        // than `max_dist` submaps from `center`, bounding memory by locality.
+        void prefetch_evict_beyond( const tripoint_abs_omt &center, int max_dist );
+
     private:
         using submap_map_t = std::map<tripoint_abs_sm, std::unique_ptr<submap>>;
 
@@ -89,6 +103,21 @@ class mapbuffer
             const cata_path &dirname, const cata_path &filename,
             const tripoint_abs_omt &om_addr, std::list<tripoint_abs_sm> &submaps_to_delete,
             bool delete_after_save );
+        // Per-zzip listing cache: maps a maps zzip archive's absolute path to the
+        // set of entry filenames (e.g. "12.34.-10.map") it contains. Lets the hot
+        // existence-check path (submap_exists / unserialize_submaps) answer "is this
+        // quad on disk?" without re-opening (mmap + footer parse) the same archive
+        // once per submap. Only the surface z-level quad of a column is ever saved
+        // for uniform deep terrain, so a walked-back column probes ~84 quads that
+        // are absent from the archive; without this each probe paid a fresh
+        // zzip::load. Populated lazily from zzip::get_entries(); we deliberately do
+        // NOT keep the zzip handle (mmap) open, so a save that rewrites the archive
+        // (compact_to + rename) is never blocked on Windows. Invalidated wholesale
+        // around save() and on clear(), the only places that mutate these archives.
+        std::unordered_map<std::string, std::unordered_set<std::string>> zzip_listing_cache;
+        // Return the entry-name set for the archive at zzip_path, loading it once and
+        // caching it. Returns nullptr if the archive does not exist / fails to open.
+        const std::unordered_set<std::string> *zzip_listing( const cata_path &zzip_path );
         submap_map_t submaps; // NOLINT(cata-serialize)
 };
 
