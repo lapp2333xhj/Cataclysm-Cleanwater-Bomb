@@ -736,6 +736,11 @@
   },
   {
     "type": "item_action",
+    "id": "paint_vehicle",
+    "name": { "str": "Paint vehicle" }
+  },
+  {
+    "type": "item_action",
     "id": "STIMPACK",
     "name": { "str": "Inject" }
   },

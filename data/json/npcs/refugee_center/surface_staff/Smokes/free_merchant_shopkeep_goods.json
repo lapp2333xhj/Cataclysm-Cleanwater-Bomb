@@ -183,7 +183,8 @@
       { "group": "hand_tools", "count": [ 9, 12 ] },
       { "group": "tools_home", "count": [ 5, 6 ] },
       { "group": "tools_construction", "count": [ 2, 3 ] },
-      { "group": "hardware_bulk", "count": [ 4, 5 ] }
+      { "group": "hardware_bulk", "count": [ 4, 5 ] },
+      { "item": "spray_can", "count": [ 3, 5 ], "charges": 10 }
     ]
   }
 ]

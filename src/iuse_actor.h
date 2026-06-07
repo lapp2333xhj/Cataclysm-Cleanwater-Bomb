@@ -163,6 +163,29 @@ class message_iuse : public iuse_actor
         std::string get_name() const override;
 };
 
+/**
+ * Paint vehicle parts a single solid color (ported from CBN's spray-can vehicle
+ * painting). On use the player first picks a color, then selects a rectangular
+ * area; every paintable displayed vehicle part inside it is recolored via
+ * @ref vehicle_part::set_color.
+ */
+class paint_vehicle : public iuse_actor
+{
+    public:
+        /** Base paint (ammo) cost per painted part. */
+        float charge_cost = 1.0f;
+
+        explicit paint_vehicle( const std::string &type = "paint_vehicle" ) : iuse_actor( type ) {}
+        ~paint_vehicle() override = default;
+
+        void load( const JsonObject &obj, const std::string & ) override;
+        using iuse_actor::use;
+        std::optional<int> use( Character *, item &, map *here, const tripoint_bub_ms & ) const override;
+        ret_val<void> can_use( const Character &, const item &, map *here,
+                               const tripoint_bub_ms & ) const override;
+        std::unique_ptr<iuse_actor> clone() const override;
+};
+
 class mp3_iuse : public iuse_actor
 {
         itype_id transform;

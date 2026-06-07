@@ -10,7 +10,9 @@
 #include <limits>
 #include <list>
 #include <memory>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 #include "action.h"
 #include "activity_actor_definitions.h"
@@ -45,6 +47,7 @@
 #include "game.h"
 #include "game_inventory.h"
 #include "generic_factory.h"
+#include "hsv_color.h"
 #include "iexamine.h"
 #include "inventory.h"
 #include "input_popup.h"
@@ -78,6 +81,7 @@
 #include "player_activity.h"
 #include "pocket_type.h"
 #include "point.h"
+#include "popup.h"
 #include "projectile.h"
 #include "recipe.h"
 #include "recipe_dictionary.h"
@@ -674,6 +678,140 @@ std::string message_iuse::get_name() const
     return name.translated();
     }
     return iuse_actor::get_name();
+}
+
+// ---- paint_vehicle ----------------------------------------------------------
+
+namespace
+{
+// Prompt the player to pick a paint color from the named-color palette.
+// Returns std::nullopt if the player cancels.
+std::optional<RGBColor> paint_vehicle_select_color()
+{
+    const std::unordered_map<RGBColor, std::string> named = RGBColor::get_all_named_colors();
+    std::vector<std::pair<RGBColor, std::string>> colors( named.begin(), named.end() );
+    std::sort( colors.begin(), colors.end(),
+    []( const std::pair<RGBColor, std::string> &a, const std::pair<RGBColor, std::string> &b ) {
+        return a.second < b.second;
+    } );
+
+    uilist menu;
+    menu.title = _( "Choose paint color" );
+    for( size_t i = 0; i < colors.size(); ++i ) {
+        menu.addentry( static_cast<int>( i ), true, MENU_AUTOASSIGN, colors[i].second );
+    }
+    menu.query();
+    if( menu.ret < 0 || menu.ret >= static_cast<int>( colors.size() ) ) {
+        return std::nullopt;
+    }
+    return colors[menu.ret].first;
+}
+} // namespace
+
+std::unique_ptr<iuse_actor> paint_vehicle::clone() const
+{
+    return std::make_unique<paint_vehicle>( *this );
+}
+
+void paint_vehicle::load( const JsonObject &obj, const std::string & )
+{
+    charge_cost = obj.get_float( "charge_cost", charge_cost );
+}
+
+ret_val<void> paint_vehicle::can_use( const Character &, const item &it, map *,
+                                      const tripoint_bub_ms & ) const
+{
+    if( it.ammo_remaining() < 1 ) {
+        return ret_val<void>::make_failure( _( "The %s is out of paint." ), it.tname() );
+    }
+    return ret_val<void>::make_success();
+}
+
+std::optional<int> paint_vehicle::use( Character *p, item &it, map *here,
+                                       const tripoint_bub_ms &pos ) const
+{
+    if( p == nullptr || here == nullptr ) {
+        return std::nullopt;
+    }
+
+    // Ask the player which color to spray before choosing where.
+    const std::optional<RGBColor> chosen = paint_vehicle_select_color();
+    if( !chosen.has_value() ) {
+        return std::nullopt;
+    }
+    const RGBColor color = chosen.value();
+
+    // Two-corner rectangular area selection (mirrors debug_menu.cpp kill_area()).
+    static_popup popup;
+    popup.on_top( true );
+    popup.message( "%s", _( "Select first corner." ) );
+
+    tripoint_bub_ms center = pos;
+    const look_around_result first = g->look_around( false, center, center, false, true, false );
+    if( !first.position ) {
+        return std::nullopt;
+    }
+    popup.message( "%s", _( "Select second corner." ) );
+    const look_around_result second = g->look_around( false, center, first.position.value(), true, true,
+                                      false );
+    if( !second.position ) {
+        return std::nullopt;
+    }
+
+    // Restrict to the vehicle under the first corner (if any), so an area that
+    // overlaps two vehicles only paints the one the player aimed at.
+    vehicle *target = nullptr;
+    const optional_vpart_position ovp_start = here->veh_at( first.position.value() );
+    if( ovp_start.has_value() ) {
+        target = &ovp_start->vehicle();
+    }
+
+    // Recolor every paintable displayed part inside the box, spending one unit of
+    // paint per part and stopping once the can runs dry.
+    const int ammo = it.ammo_remaining();
+    float charges_used = 0.0f;
+    int painted = 0;
+    for( const tripoint_bub_ms &pt : here->points_in_rectangle( first.position.value(),
+            second.position.value() ) ) {
+        if( charges_used + charge_cost > static_cast<float>( ammo ) ) {
+            break;
+        }
+        const optional_vpart_position ovp = here->veh_at( pt );
+        if( !ovp.has_value() ) {
+            continue;
+        }
+        if( target != nullptr && &ovp->vehicle() != target ) {
+            continue;
+        }
+        const std::optional<vpart_reference> vpr = ovp->part_displayed();
+        if( !vpr.has_value() ) {
+            continue;
+        }
+        vehicle_part &vp = vpr->part();
+        // NO_PAINT parts keep their own art (set_color would no-op); skip so we
+        // neither count them nor spend paint on them.
+        if( vp.info().has_flag( "NO_PAINT" ) ) {
+            continue;
+        }
+        if( vp.has_custom_color() && vp.get_color().fg == color ) {
+            continue;
+        }
+        vp.set_color( color, color );
+        charges_used += charge_cost;
+        painted += 1;
+    }
+
+    if( painted == 0 ) {
+        p->add_msg_if_player( m_info, _( "There is nothing there you can paint." ) );
+        return 0;
+    }
+
+    p->mod_moves( -to_moves<int>( 30_seconds ) * painted );
+    p->add_msg_if_player( m_info, _( "You paint %d vehicle part(s) %s." ), painted,
+                          color.friendly_name() );
+    // The return value is spent as paint charges by the use framework
+    // (Character::invoke_item -> activation_consume).
+    return std::max( 1, static_cast<int>( std::ceil( charges_used ) ) );
 }
 
 std::unique_ptr<iuse_actor> mp3_iuse::clone() const
