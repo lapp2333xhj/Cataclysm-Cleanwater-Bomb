@@ -555,12 +555,15 @@ int item::spoilage_sort_order() const
  * Rate of rot doubles every 16 F (~8.8888 C) increase in temperature
  * Rate of rot halves every 16 F decrease in temperature
  * Rot maxes out at 105 F
- * Rot stops below 32 F (0C) and above 145 F (63 C)
+ * Above 105°F, rate of rot halve every 8°F (~4.4444°C) increase in temperature
+ * Above 145°F (63°C), the rate of rot decreases to ~636 rot/hour
+ * Rot stops below 32 F (0C)
  */
 float item::calc_hourly_rotpoints_at_temp( const units::temperature &temp ) const
 {
     const units::temperature dropoff = units::from_fahrenheit( 38 ); // F, ~3 C
     const float max_rot_temp = 105; // F, ~41 C, Maximum rotting rate is at this temperature
+    const float safe_temp = 145; // F, ~63 C, threshold above which rot is severely slowed
 
     // Cryogenic rot is much simpler, rot simply idicates how many turns the item might survive outside of cryogenic storage, so they rot as if temperature was 65F.
     if( has_flag( flag_CRYOGENIC_ROT ) && temp > units::from_fahrenheit( -320 ) ) {
@@ -574,11 +577,15 @@ float item::calc_hourly_rotpoints_at_temp( const units::temperature &temp ) cons
                     temperatures::freezing ) );
     } else if( temp < units::from_fahrenheit( max_rot_temp ) ) {
         // Exponential progress from 38 F (3 C) to 105 F (41 C)
+        // Max rot from 105 F (41 C) is approximately 20364.67 rot/hour
         return 3600.f * std::exp2( ( units::to_fahrenheit( temp ) - 65.f ) / 16.f );
     } else {
-        // Constant rot from 105 F (41 C) upwards
-        // This is approximately 20364.67 rot/hour
-        return 3600.f * std::exp2( ( max_rot_temp - 65.f ) / 16.f );
+        // Exponential decay from 105 F to 145 F
+        // Rate halves every 8 F (~4.44 C) above 105 F, min approach 636 rot/hour
+        // Constant very slowly rot from 145 F (63 C) upwards.
+        const float capped_temp = std::min( units::to_fahrenheit( temp ), safe_temp );
+        return 3600.f * std::exp2( ( max_rot_temp - 65.f ) / 16.f
+                               - ( capped_temp - max_rot_temp ) / 8.f );
     }
 }
 

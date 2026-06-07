@@ -112,13 +112,13 @@ TEST_CASE( "Hourly_rotpoints", "[rot]" )
     // No rot below 32F/0C
     CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_celsius( 0 ) ) == 0 );
 
-    // Max rot above 145F/63C
+    // Rot is severely slowed above 145F/63C
     CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_celsius( 63 ) ) == Approx(
-               20364.67 ) );
+               636.396 ) );
 
-    // Make sure no off by one error at the border
+    // Rot is slowed near 145F/63C
     CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_celsius( 62 ) ) == Approx(
-               20364.67 ) );
+               718.469 ) );
 
     // 3200 point/h at 65F/18C
     CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 65 ) ) == Approx(
@@ -136,7 +136,25 @@ TEST_CASE( "Hourly_rotpoints", "[rot]" )
     CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 35 ) ) == Approx(
                1117.672 / 2 ) );
 
-    // Maximum rot at above 105 F
-    CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 107 ) ) == Approx(
+    // Maximum rot at 105 F
+    CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 105 ) ) == Approx(
                20364.67 ) );
+
+    // Rot decays above 105 F
+    CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 107 ) ) == Approx(
+               17124.58 ) );
+
+    // Rot halves every 8 F above 105 F
+    CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 105 + 8 ) ) == Approx(
+               20364.67 / 2 ) );
+    CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 105 + 16 ) ) == Approx(
+               20364.67 / 4 ) );
+    CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 105 + 24 ) ) == Approx(
+               20364.67 / 8 ) );
+    CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 105 + 32 ) ) == Approx(
+               20364.67 / 16 ) );
+
+    // Rot is constant above 145 F
+    CHECK( normal_item.calc_hourly_rotpoints_at_temp( units::from_fahrenheit( 212 ) ) == Approx(
+               636.396 ) );
 }
