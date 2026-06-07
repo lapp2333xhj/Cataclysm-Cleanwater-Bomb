@@ -119,9 +119,7 @@ jobs:
             tileset_repo: LYHGLYTX/CCB-UndeadPeople-Tileset
             tileset_dir: .
             compose_args: --use-all
-            tileset_src_checkout: "
-
-    name: Compose tileset
+            tileset_src_checkout: ""    name: Compose tileset
     runs-on: ubuntu-latest
     steps:
       - name: Restore tools into workspace from cache
