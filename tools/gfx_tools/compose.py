@@ -192,9 +192,9 @@ def write_to_json(
 
 def list_or_first(iterable: list) -> Any:
     '''
-    Always return list — CCB parser requires fg/bg to be arrays
+    Strip unneeded container list if there is only one value
     '''
-    return iterable
+    return iterable[0] if len(iterable) == 1 else iterable
 
 
 def read_properties(filepath: str) -> dict:
@@ -777,14 +777,14 @@ class TileEntry:
 
         # convert fg value
         if fg_layer:
-            entry['fg'] = list_or_first(self.convert_entry_layer(fg_layer))
+            entry['fg'] = self.convert_entry_layer(fg_layer)
         else:
             # don't pop at the start because that affects order of the keys
             entry.pop('fg', None)
 
         # convert bg value
         if bg_layer:
-            entry['bg'] = list_or_first(self.convert_entry_layer(bg_layer))
+            entry['bg'] = self.convert_entry_layer(bg_layer)
         else:
             # don't pop at the start because that affects order of the keys
             entry.pop('bg', None)
