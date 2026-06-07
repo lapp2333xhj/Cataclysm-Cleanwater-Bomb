@@ -906,12 +906,13 @@ static android_visible_frame_inbox visible_frame_inbox;
 
 extern "C" {
 
-    JNIEXPORT void JNICALL Java_org_libsdl_app_SDLActivity_onNativeVisibleDisplayFrameChanged(
+    JNIEXPORT void JNICALL Java_com_cleverraven_cataclysmdda_CataclysmDDA_onNativeImeInsetsChanged(
         JNIEnv *env, jclass jcls, jint left, jint top, jint right, jint bottom, jboolean visible )
     {
         ( void )env; // unused
         ( void )jcls; // unused
         visible_frame_inbox.publish( left, top, right, bottom, visible == JNI_TRUE );
+    }
     }
 
 } // "C"
