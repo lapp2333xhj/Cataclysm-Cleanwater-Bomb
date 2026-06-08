@@ -36,9 +36,6 @@ def icon_from_app(app_path):
 # Volume format (see hdiutil create -help)
 format = defines.get('format', 'UDBZ')
 
-# Volume size (must be large enough for your files)
-size = defines.get('size', '500M')
-
 # Files to include
 files = [application]
 
