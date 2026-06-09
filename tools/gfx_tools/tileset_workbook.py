@@ -231,9 +231,9 @@ def build_sheets(buckets, tileset_ids):
     # ---- 地图事件 map_extra ----
     mx = []
     for gid, name in buckets['map_extra']:
-        full = 'mx_' + gid
-        mx.append(make_row('map_extra', gid, name, 'mx_', full,
-                           full in ts or gid in ts))
+        # map_extra 的 id 本身已带 mx_ 前缀（如 mx_helicopter），不重复添加
+        full = gid if gid.startswith('mx_') else 'mx_' + gid
+        mx.append(make_row('map_extra', gid, name, 'mx_', full, full in ts))
     sheets['地图事件'] = sort_rows(mx)
 
     return sheets
