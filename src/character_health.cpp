@@ -2683,7 +2683,12 @@ dealt_damage_instance Character::deal_damage( Creature *source, bodypart_id bp,
 
     // TODO: Pre or post blit hit tile onto "this"'s location here
     if( dam > 0 && get_player_view().sees( here, pos ) ) {
-        g->draw_hit_player( *this, dam );
+        // Scale the reaction by damage relative to TOTAL max HP, matching the
+        // monster path (draw_hit_mon). Using a single body part's max HP here
+        // would make limb hits over-react and torso hits under-react.
+        const int max_hp = get_hp_max();
+        const float frac = max_hp > 0 ? static_cast<float>( dam ) / max_hp : 1.0f;
+        g->draw_hit_player( *this, dam, frac, source );
 
         if( is_avatar() && source ) {
             const tripoint_bub_ms source_pos = source->pos_bub( here );
