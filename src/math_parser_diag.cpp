@@ -705,7 +705,7 @@ double item_burnt_eval(const_dialogue const &d, char scope, std::vector<diag_val
         }
         else if( format == "percent" ) {
             const int vol_units = obj.base_volume() / 250_ml;
-            const int threshold = vol_units * 3;
+            const int threshold = std::max( vol_units * 3, 1 );
             return static_cast<double>( obj.burnt ) * 100.0 / static_cast<double>( threshold );
         }
     }
@@ -722,7 +722,6 @@ void item_burnt_ass(double val, dialogue& d, char scope, std::vector<diag_value>
     if ( format != "raw" && format != "percent" ) {
         throw math::runtime_error(R"(Unknown format type "%s" for item_burnt)", format);
     }
-    item& obj = **it;
     const item &obj = **it;
     if ( obj.base_volume() <= 0) {
         throw math::runtime_error( "Zero volume items cannot use item_burnt() assignment" );
@@ -733,7 +732,7 @@ void item_burnt_ass(double val, dialogue& d, char scope, std::vector<diag_value>
         }
         else if ( format == "percent" ) {
             const int vol_units = obj.base_volume() / 250_ml;
-            const int threshold = vol_units * 3;
+            const int threshold = std::max( vol_units * 3, 1 );
             obj.burnt = static_cast<int>( val * threshold / 100.0 );
         }
     }
