@@ -505,6 +505,7 @@ void draw_bullet_curses( map &m, const tripoint_bub_ms &t, const char bullet,
     bullet_animation().progress();
 }
 
+#if defined(TILES)
 // Direction of travel at trajectory point i (uses the segment leading into i).
 direction get_bullet_dir( const std::vector<tripoint_bub_ms> &trajectory, size_t i )
 {
@@ -576,6 +577,7 @@ int get_bullet_rotation( direction dir )
             return 0;
     }
 }
+#endif // TILES
 
 } // namespace
 
@@ -696,7 +698,7 @@ void game::draw_bullet_line( const std::vector<tripoint_bub_ms> &trajectory, con
     tilecontext->void_bullet();
 }
 #else
-void game::draw_bullet_line( const std::vector<tripoint_bub_ms> &trajectory, const char bullet,
+void game::draw_bullet_line( const std::vector<tripoint_bub_ms> &trajectory, const char /*bullet*/,
                              const std::string &/*custom_sprite*/ )
 {
     if( trajectory.size() < 2 ) {

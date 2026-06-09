@@ -913,7 +913,6 @@ extern "C" {
         ( void )jcls; // unused
         visible_frame_inbox.publish( left, top, right, bottom, visible == JNI_TRUE );
     }
-    }
 
 } // "C"
 
