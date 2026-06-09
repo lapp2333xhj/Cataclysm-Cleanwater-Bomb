@@ -696,19 +696,16 @@ double item_burnt_eval(const_dialogue const &d, char scope, std::vector<diag_val
         throw math::runtime_error(R"(Unknown format type "%s" for item_burnt)", format);
     }
     const item &obj = **it;
-    if ( obj.base_volume() <= 0_ml) {
+    if ( obj.base_volume() <= 0_ml ) {
         return -1;
     }
-    else{
-        if( format == "raw" ) {
-            return static_cast<double>( obj.burnt );
-        }
-        else if( format == "percent" ) {
-            const int vol_units = obj.base_volume() / 250_ml;
-            const int threshold = std::max( vol_units * 3, 1 );
-            return static_cast<double>( obj.burnt ) * 100.0 / static_cast<double>( threshold );
-        }
+    if ( format == "raw" ) {
+        return static_cast<double>( obj.burnt );
     }
+    // format is guaranteed to be "raw" or "percent" (validated above)
+    const int vol_units = obj.base_volume() / 250_ml;
+    const int threshold = std::max( vol_units * 3, 1 );
+    return static_cast<double>( obj.burnt ) * 100.0 / static_cast<double>( threshold );
 }
 
 void item_burnt_ass(double val, dialogue& d, char scope, std::vector<diag_value> const &/*params*/, diag_kwargs const& kwargs)
