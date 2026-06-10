@@ -130,9 +130,10 @@ int talker_character_const::get_artifact_resonance() const
     return me_chr_const->enchantment_cache->get_value_add( enchant_vals::mod::ARTIFACT_RESONANCE );
 }
 
-double talker_character_const::get_enchant_custom_value( const std::string &value ) const
+double talker_character_const::get_enchant_custom_value( const std::string &value,
+        double base ) const
 {
-    return me_chr_const->enchantment_cache->modify_value( value, 0.0 );
+    return me_chr_const->enchantment_cache->modify_value( value, base );
 }
 
 int talker_character_const::str_cur() const

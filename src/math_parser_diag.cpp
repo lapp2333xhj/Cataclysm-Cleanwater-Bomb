@@ -295,7 +295,14 @@ double enchant_val_eval( const_dialogue const &d, char scope,
                          std::vector<diag_value> const &params,
                          diag_kwargs const & /* kwargs */ )
 {
-    return d.const_actor( is_beta( scope ) )->get_enchant_custom_value( params[0].str( d ) );
+    // params[0]: the string key. params[1] (optional): base value the enchantment
+    // add/multiply is applied to (defaults to 0). num_params is -1 (variadic) so the
+    // parser does not enforce arity for us; validate it here.
+    if( params.empty() || params.size() > 2 ) {
+        throw math::runtime_error( R"("enchant_val" takes a key and an optional base value: enchant_val('key'[, base]))" );
+    }
+    double const base = params.size() > 1 ? params[1].dbl( d ) : 0.0;
+    return d.const_actor( is_beta( scope ) )->get_enchant_custom_value( params[0].str( d ), base );
 }
 
 double damage_level_eval( const_dialogue const &d, char scope,
@@ -1959,7 +1966,7 @@ std::map<std::string_view, dialogue_func> const dialogue_funcs{
     { "effect_duration", { "un", 1, effect_duration_eval, {}, { "bodypart", "unit" } } },
     { "limb_score", { "un", 1, limb_score_eval, {}, { "type" } } },
     { "health", { "un", 0, health_eval, health_ass } },
-    { "enchant_val", { "un", 1, enchant_val_eval } },
+    { "enchant_val", { "un", -1, enchant_val_eval } },
     { "encumbrance", { "un", 1, encumbrance_eval } },
     { "energy", { "g", 1, energy_eval } },
     { "event_statistic", { "g", 1, event_statistic_eval } },
