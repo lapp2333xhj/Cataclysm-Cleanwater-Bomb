@@ -2721,7 +2721,7 @@
       "both": {
         "items": [ "beret", "trenchcoat_leather", "longshirt", "pants_leather", "boots_larmor", "gauntlets_larmor", "socks" ],
         "entries": [
-          { "item": "legpouch_large", "contents-group": "mags_rifle_skyfarer" },
+          { "item": "legrig", "contents-group": "mags_rifle_skyfarer" },
           { "item": "762_54R", "charges": 5 },
           { "item": "mosin91_30", "ammo-item": "762_54R", "charges": 5, "contents-item": "shoulder_strap" },
           { "item": "knife_trench", "container-item": "sheath" }
