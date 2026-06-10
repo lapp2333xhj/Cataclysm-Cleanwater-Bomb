@@ -536,16 +536,31 @@ std::string bullet_sprite_id( const char bullet )
 // in the tileset; falls back to the round bullet sprite if absent.
 std::string tracer_sprite_id( const char bullet )
 {
+    std::string directional;
     switch( bullet ) {
         case '*':
-            return "animation_bullet_normal_0deg";
+            directional = "animation_bullet_normal_0deg";
+            break;
         case '#':
-            return "animation_bullet_flame_0deg";
+            directional = "animation_bullet_flame_0deg";
+            break;
         case '`':
-            return "animation_bullet_shrapnel_0deg";
+            directional = "animation_bullet_shrapnel_0deg";
+            break;
         default:
             return bullet_sprite_id( bullet );
     }
+    // Only use the directional streak if the tileset actually provides it
+    // (following looks_like). Otherwise fall back to the round bullet sprite
+    // so the gun line still renders on tilesets without _0deg tracers.
+    if( tilecontext ) {
+        const std::string resolved =
+            tilecontext->find_bullet_sprite_id( directional, TILE_CATEGORY::BULLET );
+        if( !resolved.empty() ) {
+            return resolved;
+        }
+    }
+    return bullet_sprite_id( bullet );
 }
 
 // Map a travel direction to this renderer's rotation index. 0 == sprite's
