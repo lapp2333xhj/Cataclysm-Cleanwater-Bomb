@@ -34,7 +34,9 @@
     "calories": 10,
     "description": "A pill for those looking to have children.  It is of no use to you.",
     "price": "1 cent",
-    "volume": "10 ml"
+    "volume": "10 ml",
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -50,7 +52,9 @@
     "material": [ "dense_powder" ],
     "volume": "1 ml",
     "weight": "2 g",
-    "container": "bottle_plastic_small"
+    "container": "bottle_plastic_small",
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -66,7 +70,9 @@
     "volume": "250 ml",
     "weight": "500 g",
     "//": "density is around 2g/cm3",
-    "melee_damage": { "bash": 1 }
+    "melee_damage": { "bash": 1 },
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -83,7 +89,8 @@
     "color": "dark_gray",
     "looks_like": "charcoal",
     "flags": [ "TRADER_AVOID" ],
-    "container": "bottle_plastic_small"
+    "container": "bottle_plastic_small",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -101,7 +108,9 @@
     "volume": "250 ml",
     "weight": "550 g",
     "//": "density is around 2.2g/cm3",
-    "melee_damage": { "bash": 1 }
+    "melee_damage": { "bash": 1 },
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -119,7 +128,9 @@
     "volume": "250 ml",
     "weight": "678 g",
     "//": "density is around 2.7g/cm3",
-    "melee_damage": { "bash": 1 }
+    "melee_damage": { "bash": 1 },
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -136,7 +147,8 @@
     "volume": "2 ml",
     "weight": "3460 mg",
     "//": "Density: 1.73g/cm3",
-    "container": "box_small"
+    "container": "box_small",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -153,7 +165,9 @@
     "flags": [ "TRADER_AVOID" ],
     "volume": "250 ml",
     "weight": "425 g",
-    "//": "density is around 1.73g/cm3"
+    "//": "density is around 1.73g/cm3",
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -167,7 +181,9 @@
     "description": "A pinch of sand and wood ash.  This could be used as flux for iron forging, in a pinch.",
     "material": [ "powder" ],
     "volume": "7 ml",
-    "weight": "6 g"
+    "weight": "6 g",
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -184,7 +200,9 @@
     "flags": [ "TRADER_AVOID" ],
     "volume": "250 ml",
     "weight": "640 g",
-    "//": "density is around 2.56g/cm3"
+    "//": "density is around 2.56g/cm3",
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -198,7 +216,9 @@
     "description": "Portland is most likely long gone, but its memory persists in cement.  This ubiquitous binder can be used for all kinds of advanced masonry.  Just add water.",
     "material": [ "cement" ],
     "volume": "5 ml",
-    "weight": "7200 mg"
+    "weight": "7200 mg",
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -214,7 +234,9 @@
     "//": "density: 1.6 g/cm3",
     "volume": "5 ml",
     "weight": "8 g",
-    "melee_damage": { "bash": 1 }
+    "melee_damage": { "bash": 1 },
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -228,7 +250,9 @@
     "description": "A handful of shredded rubber, usable as a mulch now.",
     "material": [ "rubber" ],
     "volume": "5 ml",
-    "weight": "6 g"
+    "weight": "6 g",
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -243,7 +267,9 @@
     "material": [ "stone" ],
     "volume": "5 ml",
     "weight": "14 g",
-    "melee_damage": { "bash": 1 }
+    "melee_damage": { "bash": 1 },
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -257,7 +283,8 @@
     "description": "The product of burning limestone, this white powder is a crucial ingredient in making cement.  That said, it is also extremely caustic and will cause severe burns to any tissue it comes in contact with.  This property could probably be exploited.",
     "material": [ "quicklime" ],
     "volume": "5 ml",
-    "weight": "16700 mg"
+    "weight": "16700 mg",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -271,7 +298,9 @@
     "description": " A handful of slaked lime, a white odorless powder with many uses.  Also known as calcium hydroxide.",
     "material": [ "slaked_lime" ],
     "volume": "1 ml",
-    "weight": "2211 mg"
+    "weight": "2211 mg",
+    "display_type": "BY_WEIGHT",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -286,7 +315,8 @@
     "description": "A handful of New England sand.  If you had a stoked furnace, you could turn it into glass.  Otherwise, it's only good for making cement.",
     "material": [ "sand" ],
     "volume": "5 ml",
-    "weight": "8 g"
+    "weight": "8 g",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -301,7 +331,8 @@
     "description": "A pile of loosely-packed, slightly damp loamy soil.  This mixture of sand, silt and clay is ideal for growing plants.",
     "material": [ "soil" ],
     "volume": "5 L",
-    "weight": "6500 g"
+    "weight": "6500 g",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -316,7 +347,9 @@
     "material": [ "stone" ],
     "weight": "2700 g",
     "volume": "1 L",
-    "melee_damage": { "bash": 2 }
+    "melee_damage": { "bash": 2 },
+    "display_type": "BY_VOLUME",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -331,7 +364,9 @@
     "material": [ "salt", "stone" ],
     "volume": "3500 ml",
     "weight": "650 g",
-    "melee_damage": { "bash": 1 }
+    "melee_damage": { "bash": 1 },
+    "display_type": "BY_VOLUME",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -347,7 +382,9 @@
     "volume": "250 ml",
     "weight": "915 g",
     "//": "density: 3.57–3.76 g/cm3",
-    "melee_damage": { "bash": 1 }
+    "melee_damage": { "bash": 1 },
+    "display_type": "BY_VOLUME",
+    "stackable": true
   },
   {
     "type": "ITEM",
@@ -362,7 +399,9 @@
     "material": [ "zincite" ],
     "volume": "250 ml",
     "weight": "1412 g",
-    "melee_damage": { "bash": 1 }
+    "melee_damage": { "bash": 1 },
+    "display_type": "BY_VOLUME",
+    "stackable": true
   },
   {
     "type": "ITEM",
