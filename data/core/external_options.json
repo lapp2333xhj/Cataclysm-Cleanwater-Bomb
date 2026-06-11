@@ -4,14 +4,14 @@
     "name": "DISPERSION_PER_GUN_DAMAGE",
     "//": "Value that adds to weapon dispersion per weapon damage value.",
     "stype": "int",
-    "value": 30
+    "value": 20
   },
   {
     "type": "EXTERNAL_OPTION",
     "name": "GUN_DISPERSION_DIVIDER",
     "//": "Value that divides total weapon dispersion.  15 means that weapons became 15 times more accurate than default.",
     "stype": "float",
-    "value": 18
+    "value": 26
   },
   {
     "type": "EXTERNAL_OPTION",

@@ -1087,7 +1087,7 @@ aim_speed = std::min( aim_speed, base_aim_speed_cap * aim_cache.aim_factor_from_
 aim_speed = std::min( aim_speed, base_aim_speed_cap * aim_cache.aim_factor_from_length );
 
 // Just a raw scaling factor.
-aim_speed *= 2.4;
+aim_speed *= 3.0;
 
 // Minimum improvement is 0.01MoA.  This is just to prevent data anomalies
 aim_speed = std::max( aim_speed, MIN_RECOIL_IMPROVEMENT );
@@ -3309,13 +3309,13 @@ int Character::get_eff_per() const
 int Character::ranged_dex_mod() const
 {
     ///\EFFECT_DEX <20 increases ranged penalty
-    return std::max( ( 20.0 - get_dex() ) * 0.5, 0.0 );
+    return std::max( ( 20.0 - get_dex() ) * 0.35, 0.0 );
 }
 
 int Character::ranged_per_mod() const
 {
     ///\EFFECT_PER <20 increases ranged aiming penalty.
-    return std::max( ( 20.0 - get_per() ) * 1.2, 0.0 );
+    return std::max( ( 20.0 - get_per() ) * 0.8, 0.0 );
 }
 
 /*
