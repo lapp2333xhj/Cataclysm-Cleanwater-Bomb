@@ -1120,6 +1120,7 @@ action_id handle_main_menu()
     REGISTER_ACTION( ACTION_WORLD_MODS );
     REGISTER_ACTION( ACTION_ACTIONMENU );
     REGISTER_ACTION( ACTION_QUICKSAVE );
+    REGISTER_ACTION(ACTION_QUICKLOAD);
     REGISTER_ACTION( ACTION_SAVE );
     if( hotkey_for_action( ACTION_DEBUG, /*maximum_modifier_count=*/1, false ).has_value() ) {
         REGISTER_ACTION( ACTION_DEBUG, 'D' );
