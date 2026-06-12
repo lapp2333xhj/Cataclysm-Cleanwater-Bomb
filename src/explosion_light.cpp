@@ -121,7 +121,7 @@ void explosion_light::check() const
 }
 
 explosion_light_sample explosion_light::sample( float radial, float progress,
-        uint32_t tile_seed, uint32_t frame_seed ) const
+        uint32_t tile_seed, uint32_t frame_seed, float blast_radius_tiles ) const
 {
     radial = std::clamp( radial, 0.0f, 1.0f );
     progress = std::max( progress, 0.0f );
@@ -129,8 +129,16 @@ explosion_light_sample explosion_light::sample( float radial, float progress,
     // Per-tile stable arrival jitter: shifts this tile's wave times a little so
     // the expanding fronts are irregular rather than perfectly concentric. Same
     // every frame (keyed on tile_seed only), so the edge doesn't crawl. Tapered
-    // to zero across the outermost ring so the blast's final outline stays round.
-    const float rim_taper = std::clamp( ( 1.0f - radial ) / 0.18f, 0.0f, 1.0f );
+    // to zero across the outermost ring so the blast's final outline stays round
+    // — but only for blasts big enough for that ring to matter. The taper band's
+    // width scales from 0 (a 1-2 tile blast: no taper, so its handful of tiles
+    // keep full jitter and don't collapse to a fixed symmetric shape) up to the
+    // full 0.18 for a blast of ~5+ tiles' radius. Without this, a small blast is
+    // almost entirely "rim" and the taper kills all of its randomness.
+    const float taper_band = 0.18f * std::clamp( ( blast_radius_tiles - 1.5f ) / 4.0f, 0.0f, 1.0f );
+    const float rim_taper = taper_band <= 0.0f
+                            ? 1.0f
+                            : std::clamp( ( 1.0f - radial ) / taper_band, 0.0f, 1.0f );
     const float jitter = hash_signed( tile_seed ) * spread_jitter * rim_taper;
 
     // Arrival progress of each wave at this tile: it travels out from the centre

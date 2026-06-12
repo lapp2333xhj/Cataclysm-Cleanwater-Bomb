@@ -102,6 +102,49 @@ TEST_CASE( "explosion_light waves expand from the centre outward", "[explosion_l
     CHECK( static_cast<int>( rim_lit.a ) > 0 );
 }
 
+TEST_CASE( "explosion_light rim jitter taper scales with blast size", "[explosion_light]" )
+{
+    // The outermost ring's spread jitter is tapered so a big blast keeps a round
+    // silhouette, but that taper must NOT apply to a small blast — otherwise its
+    // handful of (mostly rim) tiles lose all randomness and collapse to a fixed
+    // symmetric shape. Verify the taper is radius-dependent at the rim and absent
+    // at the centre (which is never tapered, so it's a control).
+    explosion_light e = make_default_recipe();
+    e.spread_jitter = 0.25f; // strong jitter so the arrival spread is observable
+
+    // A near-rim tile's unjittered wave-1 arrival is radial*wave_travel = 0.361.
+    // Sample just before that (0.28): a tile only lights early if negative jitter
+    // pulled its arrival in. With full jitter (small blast) a good fraction do;
+    // with the jitter suppressed by the rim taper (big blast) none should.
+    const float radial = 0.95f;
+    const float progress = 0.28f;
+    auto count_lit = [&]( float radius_tiles ) {
+        int lit = 0;
+        for( uint32_t seed = 0; seed < 64; seed++ ) {
+            if( e.sample( radial, progress, seed, seed, radius_tiles ).a > 0 ) {
+                lit++;
+            }
+        }
+        return lit;
+    };
+
+    const int small_blast_lit = count_lit( 1.0f );   // <=1.5 tiles: no taper
+    const int big_blast_lit = count_lit( 8.0f );     // >=5.5 tiles: full taper
+
+    // Small blast keeps its jitter: several rim tiles light early.
+    CHECK( small_blast_lit > 0 );
+    // Big blast's rim jitter is tapered away: arrivals cluster at the unjittered
+    // time, so none light this far ahead.
+    CHECK( big_blast_lit == 0 );
+    CHECK( small_blast_lit > big_blast_lit );
+
+    // Control: the centre tile (radial 0) is never tapered, so blast size doesn't
+    // change its arrival jitter at all.
+    const int centre_small = e.sample( 0.0f, 0.10f, 7, 7, 1.0f ).a;
+    const int centre_big = e.sample( 0.0f, 0.10f, 7, 7, 8.0f ).a;
+    CHECK( centre_small == centre_big );
+}
+
 TEST_CASE( "explosion_light flashes fast then dims, until cleared", "[explosion_light]" )
 {
     explosion_light e = make_default_recipe();

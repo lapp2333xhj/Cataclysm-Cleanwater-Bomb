@@ -5396,7 +5396,7 @@ void cata_tiles::draw_explosion_light_frame( int view_z )
             const uint32_t frame_seed = tile_seed ^ ( frame_q * 83492791U );
 
             const explosion_light_sample s =
-                eff.sample( pr.second, blast.progress, tile_seed, frame_seed );
+                eff.sample( pr.second, blast.progress, tile_seed, frame_seed, blast.radius_tiles );
             if( s.a == 0 ) {
                 continue;
             }

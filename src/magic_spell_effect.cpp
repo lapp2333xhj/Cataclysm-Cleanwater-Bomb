@@ -498,10 +498,19 @@ static std::set<tripoint_bub_ms> spell_effect_area( const spell &sp, const tripo
             explosion_colors[pt] = sp.damage_type_color();
         }
 
-        std::string exp_name = "explosion_" + sp.id().str();
-
-        explosion_handler::draw_custom_explosion( explosion_colors,
-                exp_name );
+        // A spell that names a modern explosion_light recipe renders the new
+        // light / shockwave overlay over its area; one that doesn't keeps the
+        // legacy expanding-sprite animation (named "explosion_<spellid>"), so
+        // every existing spell is visually unchanged. The two are mutually
+        // exclusive because the overlay path is skipped whenever a tile_id is
+        // passed (see draw_custom_explosion).
+        const explosion_light_str_id light = sp.explosion_light_id();
+        if( light.is_empty() ) {
+            const std::string exp_name = "explosion_" + sp.id().str();
+            explosion_handler::draw_custom_explosion( explosion_colors, exp_name );
+        } else {
+            explosion_handler::draw_custom_explosion( explosion_colors, std::nullopt, light, target );
+        }
     }
     return targets;
 }
@@ -1536,8 +1545,14 @@ void spell_effect::pull_to_caster( const spell &sp, Creature &caster,
 
 void spell_effect::explosion( const spell &sp, Creature &caster, const tripoint_bub_ms &target )
 {
-    explosion_handler::explosion( &caster, target, sp.damage( caster ), sp.aoe( caster ) / 10.0,
-                                  true );
+    explosion_data data;
+    data.power = sp.damage( caster );
+    data.distance_factor = sp.aoe( caster ) / 10.0;
+    data.fire = true;
+    // Carry the spell's modern explosion-light recipe into the blast, if it named
+    // one; empty leaves the built-in default_blast visual (unchanged behaviour).
+    data.light_effect = sp.explosion_light_id();
+    explosion_handler::explosion( &caster, target, data );
 }
 
 void spell_effect::flashbang( const spell &sp, Creature &caster, const tripoint_bub_ms &target )

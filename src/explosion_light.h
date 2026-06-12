@@ -101,9 +101,15 @@ struct explosion_light {
         //              per-tile spread jitter and colour grain so the wavefront
         //              edge is irregular but doesn't shimmer between frames.
         //   frame_seed:per-tile/per-frame value — drives the live flicker only.
+        //   blast_radius_tiles: the blast's physical radius in tiles. Scales the
+        //              rim taper that rounds off the outermost ring: a big blast
+        //              keeps its round silhouette, but a small blast (only a tile
+        //              or two across) skips the taper so its few tiles still get
+        //              the full spread jitter instead of collapsing to a fixed
+        //              symmetric shape.
         // Pure function: no SDL, no globals — unit-tested directly.
         explosion_light_sample sample( float radial, float progress, uint32_t tile_seed,
-                                       uint32_t frame_seed ) const;
+                                       uint32_t frame_seed, float blast_radius_tiles = 1.0f ) const;
 
         // Used by generic_factory
         explosion_light_str_id id;

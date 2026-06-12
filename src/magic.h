@@ -235,6 +235,11 @@ class spell_type
         spell_shape spell_area = spell_shape::line;
         // extra information about spell effect. allows for combinations for effects
         std::string effect_str;
+        // Modern explosion-light recipe for this spell's blast visual. Empty (the
+        // default) keeps the legacy expanding-sprite animation, so existing spells
+        // are unchanged. Set to an explosion_light id to render the modern light /
+        // shockwave overlay for the spell's area instead.
+        explosion_light_str_id explosion_light;
         // list of additional "spell effects"
         std::vector<fake_spell> additional_spells;
 
@@ -630,6 +635,8 @@ class spell
         std::string effect() const;
         // get spell effect_str data
         std::string effect_data() const;
+        // modern explosion-light recipe for this spell's blast visual (empty -> legacy sprite)
+        explosion_light_str_id explosion_light_id() const;
         // get spell summon vehicle id
         vproto_id summon_vehicle_id() const;
         // name of spell (translated)

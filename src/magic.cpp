@@ -401,6 +401,7 @@ void spell_type::load( const JsonObject &jo, std::string_view src )
     }
 
     optional( jo, was_loaded, "effect_str", effect_str, effect_str_default );
+    optional( jo, was_loaded, "explosion_light", explosion_light, explosion_light_str_id() );
 
     std::string field_input;
     // Because the field this is loading into is not part of this type,
@@ -2117,6 +2118,11 @@ dealt_projectile_attack spell::get_projectile_attack( const tripoint_bub_ms &tar
 std::string spell::effect_data() const
 {
     return type->effect_str;
+}
+
+explosion_light_str_id spell::explosion_light_id() const
+{
+    return type->explosion_light;
 }
 
 vproto_id spell::summon_vehicle_id() const
