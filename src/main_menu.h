@@ -25,6 +25,9 @@ class main_menu
         static std::string queued_world_to_load;
         static std::string queued_save_id_to_load;
     private:
+        // Clipboard for personal zones copy/paste across worlds
+        static std::string clipboard_personal_zones;
+
         // ASCII art that says "Cataclysm: Cleanwater Bomb"
         std::vector<std::string> mmenu_title;
         std::string mmenu_motd;

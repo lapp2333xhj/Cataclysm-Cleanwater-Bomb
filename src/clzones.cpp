@@ -5,6 +5,7 @@
 #include <functional>
 #include <iosfwd>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <tuple>
 
@@ -31,6 +32,7 @@
 #include "item_search.h"
 #include "itype.h"
 #include "json.h"
+#include "json_loader.h"
 #include "localized_comparator.h"
 #include "map.h"
 #include "map_iterator.h"
@@ -2037,4 +2039,120 @@ std::unique_ptr<const_talker> get_talker_for( const zone_data &me )
 std::unique_ptr<talker> get_talker_for( zone_data *me )
 {
     return std::make_unique<talker_zone>( me );
+}
+
+namespace
+{
+
+// Recursively copy a JsonValue to a JsonOut stream.
+// Uses get_member() to mark each field as visited, avoiding
+// JsonObject destructor warnings about unread fields.
+void copy_json_value( JsonOut &jsout, const JsonValue &jv )
+{
+    if( jv.test_object() ) {
+        JsonObject jo = jv.get_object();
+        jsout.start_object();
+        for( const JsonMember &member : jo ) {
+            std::string key = member.name();
+            jsout.member( key );
+            copy_json_value( jsout, jo.get_member( key ) );
+        }
+        jsout.end_object();
+    } else if( jv.test_array() ) {
+        JsonArray ja = jv.get_array();
+        jsout.start_array();
+        for( const JsonValue &elem : ja ) {
+            copy_json_value( jsout, elem );
+        }
+        jsout.end_array();
+    } else if( jv.test_null() ) {
+        jsout.write_null();
+    } else if( jv.test_bool() ) {
+        jsout.write( jv.get_bool() );
+    } else if( jv.test_int() ) {
+        jsout.write( jv.get_int() );
+    } else if( jv.test_float() ) {
+        jsout.write( jv.get_float() );
+    } else if( jv.test_string() ) {
+        jsout.write( jv.get_string() );
+    }
+}
+
+// Check whether a zone JSON object is a personal zone, marking all
+// fields as visited to avoid JsonObject destructor warnings.
+bool is_personal_zone( const JsonValue &entry )
+{
+    if( !entry.test_object() ) {
+        return false;
+    }
+    JsonObject obj = entry.get_object();
+    bool personal = false;
+    if( obj.has_member( "is_personal" ) ) {
+        personal = obj.get_member( "is_personal" ).get_bool();
+    }
+    // Mark all fields as visited
+    for( const JsonMember &m : obj ) {
+        obj.get_member( m.name() );
+    }
+    return personal;
+}
+
+} // namespace
+
+std::string zone_manager::copy_personal_zones( const cata_path &zones_file, int &out_count )
+{
+    out_count = 0;
+    std::string result;
+    read_from_file_optional_json( zones_file, [&]( const JsonValue & jv ) {
+        std::stringstream ss;
+        JsonOut jsout( ss );
+        jsout.start_array();
+        for( const JsonValue &entry : jv.get_array() ) {
+            if( is_personal_zone( entry ) ) {
+                copy_json_value( jsout, entry );
+                out_count++;
+            }
+        }
+        jsout.end_array();
+        result = ss.str();
+    } );
+    if( out_count == 0 ) {
+        return {};
+    }
+    return result;
+}
+
+bool zone_manager::paste_personal_zones( const cata_path &zones_file,
+        const std::string &personal_zones_json )
+{
+    // Read existing zones, keeping only non-personal ones
+    std::string non_personal_json;
+    read_from_file_optional_json( zones_file, [&]( const JsonValue & jv ) {
+        std::stringstream ss;
+        JsonOut jsout( ss );
+        jsout.start_array();
+        for( const JsonValue &entry : jv.get_array() ) {
+            if( !is_personal_zone( entry ) ) {
+                copy_json_value( jsout, entry );
+            }
+        }
+        jsout.end_array();
+        non_personal_json = ss.str();
+    } );
+    // Merge: non-personal zones from target + personal zones from clipboard
+    return write_to_file( zones_file, [&]( std::ostream & fout ) {
+        JsonOut jsout( fout );
+        jsout.start_array();
+        if( !non_personal_json.empty() ) {
+            JsonValue npjv = json_loader::from_string( non_personal_json );
+            for( const JsonValue &entry : npjv.get_array() ) {
+                copy_json_value( jsout, entry );
+            }
+        }
+        JsonValue clipjv = json_loader::from_string( personal_zones_json );
+        for( const JsonValue &entry : clipjv.get_array() ) {
+            copy_json_value( jsout, entry );
+        }
+        jsout.end_array();
+    }, _( "zones data" ) );
 }

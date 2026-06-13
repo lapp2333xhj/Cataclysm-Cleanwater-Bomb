@@ -28,6 +28,7 @@
 #include "cata_utility.h"
 #include "catacharset.h"
 #include "character_id.h"
+#include "clzones.h"
 #include "color.h"
 #include "debug.h"
 #include "enums.h"
@@ -83,6 +84,7 @@ enum class main_menu_opts : int {
 
 std::string main_menu::queued_world_to_load;
 std::string main_menu::queued_save_id_to_load;
+std::string main_menu::clipboard_personal_zones;
 
 static int getopt( main_menu_opts o )
 {
@@ -510,6 +512,8 @@ void main_menu::init_strings()
     vWorldSubItems.emplace_back( pgettext( "Main Menu|World", "Toggle World <C|c>ompression" ) );
     vWorldSubItems.emplace_back( pgettext( "Main Menu|World", "<D|d>elete World" ) );
     vWorldSubItems.emplace_back( pgettext( "Main Menu|World", "<R|r>eset World" ) );
+    vWorldSubItems.emplace_back( pgettext( "Main Menu|World", "Cop<y|Y> Personal Zones" ) );
+    vWorldSubItems.emplace_back( pgettext( "Main Menu|World", "Past<e|E> Personal Zones" ) );
 
     vWorldHotkeys.clear();
     for( const std::string &item : vWorldSubItems ) {
@@ -1179,7 +1183,7 @@ void main_menu::world_tab( const std::string &worldname )
     uilist mmenu( string_format( _( "Manage world \"%s\"" ), worldname ), {} );
     mmenu.border_color = c_white;
     int opt_val = 0;
-    std::array<char, 6> hotkeys = { 'm', 's', 't', 'c', 'd', 'r' };
+    std::array<char, 8> hotkeys = { 'm', 's', 't', 'c', 'd', 'r', 'y', 'e' };
     for( const std::string &it : vWorldSubItems ) {
         mmenu.entries.emplace_back( opt_val, true, hotkeys[opt_val],
                                     remove_color_tags( shortcut_text( c_white, it ) ) );
@@ -1247,6 +1251,77 @@ void main_menu::world_tab( const std::string &worldname )
                 clear_world( false );
             }
             break;
+        case 6: { // Copy Personal Zones
+            WORLD *cur_world = world_generator->get_world( worldname );
+            const std::vector<save_t> &saves = cur_world->world_saves;
+            if( saves.empty() ) {
+                popup( _( "No characters in this world!" ) );
+                break;
+            }
+            uilist char_menu;
+            char_menu.title = _( "Copy personal zones from which character?" );
+            char_menu.border_color = c_white;
+            int char_opt = 0;
+            for( const save_t &s : saves ) {
+                char_menu.entries.emplace_back( char_opt++, true, MENU_AUTOASSIGN,
+                                                s.decoded_name() );
+            }
+            char_menu.entries.emplace_back( char_opt, true, 'q', _( "<- Back" ),
+                                            c_yellow, c_yellow );
+            char_menu.query();
+            if( char_menu.ret < 0 ||
+                static_cast<size_t>( char_menu.ret ) >= saves.size() ) {
+                break;
+            }
+            cata_path zones_file = cur_world->folder_path() /
+                                   ( saves[char_menu.ret].base_path() + ".zones.json" );
+            int zone_count = 0;
+            clipboard_personal_zones = zone_manager::copy_personal_zones( zones_file,
+                                           zone_count );
+            if( zone_count > 0 ) {
+                popup( n_gettext( "Copied %d personal zone.",
+                                  "Copied %d personal zones.", zone_count ), zone_count );
+            } else {
+                popup( _( "No personal zones found for this character." ) );
+            }
+            break;
+        }
+        case 7: { // Paste Personal Zones
+            if( clipboard_personal_zones.empty() ) {
+                popup( _( "No personal zones in clipboard. Copy personal zones first." ) );
+                break;
+            }
+            WORLD *cur_world = world_generator->get_world( worldname );
+            const std::vector<save_t> &saves = cur_world->world_saves;
+            if( saves.empty() ) {
+                popup( _( "No characters in this world!" ) );
+                break;
+            }
+            uilist char_menu;
+            char_menu.title = _( "Paste personal zones to which character?" );
+            char_menu.border_color = c_white;
+            int char_opt = 0;
+            for( const save_t &s : saves ) {
+                char_menu.entries.emplace_back( char_opt++, true, MENU_AUTOASSIGN,
+                                                s.decoded_name() );
+            }
+            char_menu.entries.emplace_back( char_opt, true, 'q', _( "<- Back" ),
+                                            c_yellow, c_yellow );
+            char_menu.query();
+            if( char_menu.ret < 0 ||
+                static_cast<size_t>( char_menu.ret ) >= saves.size() ) {
+                break;
+            }
+            cata_path zones_file = cur_world->folder_path() /
+                                   ( saves[char_menu.ret].base_path() + ".zones.json" );
+            if( zone_manager::paste_personal_zones( zones_file,
+                    clipboard_personal_zones ) ) {
+                popup( _( "Personal zones pasted successfully." ) );
+            } else {
+                popup( _( "Failed to write zones data." ) );
+            }
+            break;
+        }
         default:
             break;
     }

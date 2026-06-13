@@ -24,6 +24,8 @@
 #include "translation.h"
 #include "type_id.h"
 
+class cata_path;
+
 namespace catacurses
 {
 class window;
@@ -722,6 +724,25 @@ class zone_manager
         void revert_vzones();
         void serialize( JsonOut &json ) const;
         void deserialize( const JsonValue &jv );
+
+        /**
+         * Read a zones file and extract only personal zones.
+         * Returns them serialized as a JSON string.
+         * @param zones_file path to the .zones.json file
+         * @param out_count receives the number of personal zones found
+         */
+        static std::string copy_personal_zones( const cata_path &zones_file, int &out_count );
+
+        /**
+         * Read a zones file, replace all personal zones with the ones from
+         * the JSON string (produced by copy_personal_zones), preserving
+         * non-personal zones.
+         * @param zones_file path to the .zones.json file
+         * @param personal_zones_json JSON string of personal zones array
+         * @returns true on success
+         */
+        static bool paste_personal_zones( const cata_path &zones_file,
+                                          const std::string &personal_zones_json );
 };
 
 /**
