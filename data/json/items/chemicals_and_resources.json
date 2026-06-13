@@ -90,7 +90,6 @@
     "color": "dark_gray",
     "looks_like": "charcoal",
     "flags": [ "TRADER_AVOID" ],
-    "container": "bottle_plastic_small",
     "stackable": true
   },
   {
@@ -149,7 +148,6 @@
     "volume": "2 ml",
     "weight": "3460 mg",
     "//": "Density: 1.73g/cm3",
-    "container": "box_small",
     "stackable": true
   },
   {
